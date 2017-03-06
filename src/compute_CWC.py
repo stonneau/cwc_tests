@@ -89,13 +89,4 @@ def compute_CWC(p, N, mu = 0.3, simplify_cones = False):
 
 	#~ print "CWC_END"
 	return H
-	
-                     
-g_vec = array([0,0,-9.81])
-                                        
-def test_static_eq(H,c,m):	
-	y = m * (- g_vec)
-	w = array(y.tolist() + (cross(c, y)).tolist())
-	return (H.dot(w)>=0).all() 
-
 
