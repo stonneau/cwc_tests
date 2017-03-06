@@ -35,11 +35,11 @@ def __plot_3d_points(ax, points, c = 'b'):
 #  redundancies
 #  \param params requires "mass" "g"  and "mu"
 #  \return the CWC H, H w <= 0, where w is the wrench
-def plot_cond(P,N,m,bounds,discretizationSteps, ddc, condition):
+def plot_cond(P,N,bounds,discretizationSteps, ddc, condition):
 	x_vals = __gen_values(bounds[0],bounds[1],discretizationSteps[0])
 	y_vals = __gen_values(bounds[2],bounds[3],discretizationSteps[1])
 	z_vals = __gen_values(bounds[4],bounds[5],discretizationSteps[2])
-	valid_points =  [[x_i,y_i,z_i] for  x_i in x_vals for  y_i in y_vals for  z_i in z_vals if condition(np.array([x_i,y_i,z_i]),ddc,m)]	
+	valid_points =  [[x_i,y_i,z_i] for  x_i in x_vals for  y_i in y_vals for  z_i in z_vals if condition(np.array([x_i,y_i,z_i]),ddc)]	
 	fig = plt.figure()	
 	ax = fig.add_subplot(111, projection='3d')
 	__plot_3d_points(ax, P, 'r') #contact points
