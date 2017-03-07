@@ -70,10 +70,6 @@ def _lp(solver,c,ddc):
 	else:
 		return _normalize(acc_0).dot(norm_ddc) > 0 and np.linalg.norm(acc_0) >=  np.linalg.norm(ddc)
 
-#~ def test_eq_lp(P,N,mu,m):	
-	#~ def eval_wrench(c,ddc):		
-		#~ return _lp(P,N,c,ddc)
-	#~ return eval_wrench
 	
 def test_eq_lp(P,N,mu,m):	
 	solver = ComAccLP("pff", c0=np.array([0,0,0]), v=np.array([1,0,0]), contact_points=P, contact_normals=N, mu=0.3, g = g_vec, mass=54, 
@@ -82,4 +78,8 @@ def test_eq_lp(P,N,mu,m):
 	def eval_wrench(c,ddc):		
 		return _lp(solver,c,ddc)
 	return eval_wrench
+	
+#writing pierre's lp
+
+
 	
