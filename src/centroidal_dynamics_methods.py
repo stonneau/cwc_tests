@@ -78,8 +78,8 @@ def compute_contact_to_cwc_matrix(p):
 	c = p.shape[0];
 	M = np.zeros((6,3*c));
 	for i in range(c):
-		M[:3, 3*i:3*i+3] = -np.identity(3);
-		M[3:, 3*i:3*i+3] = -crossMatrix(p[i,:]);
+		M[:3, 3*i:3*i+3] = np.identity(3);
+		M[3:, 3*i:3*i+3] = crossMatrix(p[i,:]);
 	return M
 	
 

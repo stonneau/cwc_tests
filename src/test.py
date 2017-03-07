@@ -49,7 +49,7 @@ def test(beta = 0, mu = 0.3, ddc = np.array([0,0,0]), mass = 54, method = test_e
 	#~ plot_cond(P,N,bounds,increments, ddc, test_wtf)
 
 
-test(0.,ddc=np.array([0,0,0]), method = test_eq_cwc)
+test(0.,ddc=np.array([0,0,0]), method = test_eq_lp)
 #~ test(0.,ddc=np.array([0,0,0]))
 
 

@@ -34,7 +34,7 @@ CONTACT_SET = 1;
 #  \return the CWC H, H w <= 0, where w is the wrench
 def compute_CWC(p, N, mu = 0.3, simplify_cones = False):
 	S = compute_contact_generators(p, N, mu = mu, n =  n ,cg = cg, USE_DIAGONAL_GENERATORS = USE_DIAGONAL_GENERATORS)
-	M = compute_contact_to_cwc_matrix(p)	
+	M = -compute_contact_to_cwc_matrix(p) #sign reversed compared to paper ICRA 15 from del prete
 	c = p.shape[0]
 	m = c*cg;            # number of generators
 	''' project generators in 6d centroidal space '''
