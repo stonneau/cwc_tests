@@ -41,15 +41,11 @@ increments = [0.1,0.1,1]
 #~ P,N = gen_contact()
 def test(beta = 0, mu = 0.3, ddc = np.array([0,0,0]), mass = 54, method = test_eq_lp):
 	P,N = gen_contact(R = rotation_matrix(beta, y_axis))
-	print "R", rotation_matrix(beta, y_axis)
-	print "P", P
-	print "N", N
-	global H
 	plot_cond(P,N,bounds,increments, ddc, method(P,N,mu,mass))
-	#~ plot_cond(P,N,bounds,increments, ddc, test_wtf)
 
 
 test(0.,ddc=np.array([0,0,0]), method = test_eq_lp)
+test(0.,ddc=np.array([0,0,0]), method = test_eq_cwc)
 #~ test(0.,ddc=np.array([0,0,0]))
 
 

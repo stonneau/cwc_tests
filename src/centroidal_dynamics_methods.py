@@ -82,5 +82,24 @@ def compute_contact_to_cwc_matrix(p):
 		M[3:, 3*i:3*i+3] = crossMatrix(p[i,:]);
 	return M
 	
-
+## 
+#  Given a list of contact points
+#  as well as a list of associated normals
+#  compute the G matrix mapping the contact forces generator to the 6D centroidal cone
+#  \param p array of 3d contact positions
+#  \param N array of 3d contact normals
+#  \param mu friction coefficient
+#  \param n generator size
+#  \param cg number of generators per contact
+#  \return the V	
+def compute_G(p, N, mu = 0.3, n = 3 ,cg = 4, USE_DIAGONAL_GENERATORS = True):
+	V = compute_contact_generators(p, N, mu = mu, n =  n ,cg = cg, USE_DIAGONAL_GENERATORS = USE_DIAGONAL_GENERATORS)
+	M = compute_contact_to_cwc_matrix(p) #sign reversed compared to paper ICRA 15 from del prete
+	c = p.shape[0]
+	m = c*cg;            # number of generators
+	''' project generators in 6d centroidal space '''
+	G = np.zeros((6,m));
+	for i in range(c):
+		G[:,cg*i:cg*i+cg] = np.dot(M[:,3*i:3*i+3], V[:,cg*i:cg*i+cg]);
+	return G
 

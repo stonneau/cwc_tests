@@ -6,35 +6,30 @@ Created on Tue March 7
 
 
 from numpy import array, zeros, ones, sqrt, cross
-from centroidal_dynamics_methods import compute_contact_generators, compute_contact_to_cwc_matrix
+from centroidal_dynamics_methods import compute_G
 
 NUMBER_TYPE = 'float'  # 'float' or 'fraction'
 
 g_vec = array([0,0,-9.81])
                 
-def __compute_G(p, N, mu):
-	V = compute_contact_generators(p, N, mu = mu)
-	p_cross = compute_contact_to_cwc_matrix(p)	
-	print "p_cross", p_cross.shape
-	print "V", V.shape
-	print "V", V
-	return p_cross.dot(V)
-
 def __compute_h(c,mass):
-	h = np.zeros(6);
+	h = zeros(6);
 	h[0:3] =  -g_vec
 	h[3:6] =  cross(c, -g_vec)
 	return mass * h
 		
 def __compute_H_ddc(c,ddc,mass):
-	H_ddc = np.zeros(6);
-	h[0:3] =  ddc
-	h[3:6] =  cross(c, ddc)
-	return mass * h
+	H_ddc = zeros(6);
+	H_ddc[0:3] =  ddc
+	H_ddc[3:6] =  cross(c, ddc)
+	return mass * H_ddc
 		
-                     
-	from scipy.optimize import linprog
+
+#~ from scipy.optimize import linprog
+from pinocchio_inv_dyn.optimization import solver_LP_abstract
  
+solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=1000, maxTime=100.0, useWarmStart=True, verb=0)
+
 # Formulate the dynamic equilibrium problem as a linear program
 # see IROS 17 submission by P. Fernbach et al.
 # Find B
@@ -54,11 +49,13 @@ def __compute_H_ddc(c,ddc,mass):
 #  \param ddc COM  acceleration (array)
 #  \return whether the system is in dynamic equilibrium
 def dynamic_equilibrium(c, ddc, p, N, mass = 54, mu = 0.3):
-	G = __compute_G(p, N, mu);
+	G = compute_G(p, N, mu);
 	h = __compute_h(c, mass)
 	H_ddc = __compute_H_ddc(c,ddc,mass)
-	size_beta = G.shape[1]
-	cost = ones(size_beta)
-	#define constraint beta >= 0, and beta not constrainted
+	cost = ones(G.shape[1])
 	bounds = tuple([(0, None) for _ in cost])
-	res = linprog(cost, A_eq=G, b_eq=H_ddc + h, bounds=bounds,options={"disp": True})
+	lb = array([0. for _ in cost])
+	ub = array([10000000. for _ in cost])
+	global solver
+	(status, res, _) = solver.solve(cost, lb, ub, A_in=None, Alb=None, Aub=None, A_eq=G, b=H_ddc + h)
+	return status == solver_LP_abstract.LP_status.OPTIMAL
