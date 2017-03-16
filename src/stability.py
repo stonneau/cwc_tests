@@ -7,18 +7,16 @@ Created on march 6, 2017
 from numpy import array, vstack, zeros, sqrt, cross
 import numpy as np
 
-from compute_CWC import compute_CWC
+from compute_CWC import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium
+from centroidal_dynamics_methods import compute_w
 
-g_vec = array([0,0,-9.81])
                                         
 #test stability via polytope projection                                                                                
-def test_eq_cwc(P,N,mu,m):	
+def test_eq_cwc(P,N,mu,m, g_vec = array([0,0,-9.81])):	
 	H = compute_CWC(P,N,mu=mu)
-	def eval_wrench(c,ddc):
-		y = m * (ddc - g_vec)
-		w = array(y.tolist() + (cross(c, y)).tolist())
-		return (H.dot(w)<=0).all()
+	def eval_wrench(c,ddc, dL=array([0.,0.,0.])):
+		return is_stable(H, c, ddc, dL, g_vec)
 	return eval_wrench
 
 	

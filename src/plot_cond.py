@@ -45,6 +45,6 @@ def plot_cond(P,N,bounds,discretizationSteps, ddc, condition):
 	ax = fig.add_subplot(111, projection='3d')
 	__plot_3d_points(ax, P, 'r') #contact points
 	__plot_3d_points(ax, valid_points)
-	plt.show()     
+	#~ plt.show()     
 	return valid_points
 

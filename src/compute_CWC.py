@@ -10,7 +10,7 @@ import numpy as np
 from math import cos, sin, tan, atan, pi
 
 from polytope_conversion_utils import *
-from centroidal_dynamics_methods import compute_G
+from centroidal_dynamics_methods import compute_G, compute_w
 
 NUMBER_TYPE = 'float'  # 'float' or 'fraction'
 
@@ -37,3 +37,20 @@ def compute_CWC(p, N, mu = 0.3, simplify_cones = False):
 	''' convert generators to inequalities '''
 	return cone_span_to_face(G, simplify_cones);
 
+## 
+#  Given a cone and a wrench returns whether
+#  the robot is in equilibrium
+#  compute the gravito inertial wrench cone
+#  \param H cone
+#  \param c COM position
+#  \param ddc cone
+#  \param H cone
+#  \param N array of 3d contact normals
+#  \param mu friction coefficient
+#  \param simplify_cones if true inequality conversion will try to remove 
+#  redundancies
+#  \param params requires "mu"
+#  \return the CWC H, H w <= 0, where w is the wrench
+def is_stable(H,c, ddc=array([0.,0.,0.]), dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,9.81])):
+	w = compute_w(c, ddc, dL, m, g_vec)
+	return (H.dot(w)<=0).all()
