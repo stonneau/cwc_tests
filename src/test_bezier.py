@@ -11,7 +11,7 @@ from stability import test_eq_cwc
 from plot_cond import plot_cond
 from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros
-from compute_CWC import compute_CWC, is_stable
+from CWC_methods import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
 from lp_intersect import find_intersection_c, find_intersection_ddc
 

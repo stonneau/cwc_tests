@@ -6,7 +6,6 @@ Created on Tue March 7
 
 
 from numpy import array, zeros, ones, sqrt, cross, asmatrix, matrix
-from centroidal_dynamics_methods import compute_G
 
 NUMBER_TYPE = 'float'  # 'float' or 'fraction'
                 

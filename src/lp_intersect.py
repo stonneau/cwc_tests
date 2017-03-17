@@ -48,7 +48,7 @@ def __compute_H(H1, H2):
 def __compute_K_c(H, w1):
 	H_w2 = H[:,3:]
 	w1_cross = crossMatrix(w1)
-	return H_w2.dot(-w1_cross)		
+	return -H_w2.dot(w1_cross)		
 	
 def __compute_K_1_c(H, w1):
 	K_c = __compute_K_c(H, w1)

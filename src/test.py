@@ -34,7 +34,7 @@ def gen_contact(center = np.array([0,0,0]),R = identity_matrix()):
 	
 
 bounds = [-1,1,-1,1,-0,2.1]
-increments = [0.01,0.01,1]
+increments = [0.03,0.03,1.]
 
 #~ bounds = [-.5,.5,-.5,.5,-0,2.1]
 #~ increments = [0.1,0.1,1]
@@ -48,8 +48,8 @@ import matplotlib.pyplot as plt
 
 
 def seq_test(beta=0., ddc=np.array([1,0,0])):
-	test(beta,ddc=np.array([0.,0.,0.]), method = test_eq_cwc)
-	test(beta,ddc=np.array([0.,0.,0.]), method = test_eq_lp)
+	test(beta,ddc=np.array([1.,0.,0.]), method = test_eq_cwc)
+	test(beta,ddc=np.array([1.,0.,0.]), method = test_eq_lp)
 	plt.show()
 	
 seq_test(-0.,np.array([0.,0.,0.]))
