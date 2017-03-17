@@ -40,7 +40,7 @@ increments = [0.05,0.05,0.2]
 #~ increments = [0.1,0.1,1]
 
 #~ P,N = gen_contact()
-def test(beta = 0, mu = 0.3, ddc = np.array([0,0,0]), mass = 54, method = test_eq_lp):
+def test(beta = 0, mu = 0.3, ddc = np.array([0,0,0]), mass = 54., method = test_eq_lp):
 	P,N = gen_contact(R = rotation_matrix(beta, y_axis))
 	return plot_cond(P,N,bounds,increments, ddc, method(P,N,mu,mass))
 
@@ -52,7 +52,7 @@ def seq_test(beta=0., ddc=np.array([1,0,0])):
 	test(beta,ddc=np.array([1,0,0]), method = test_eq_cwc)
 	plt.show()
 	
-#~ seq_test(-0.4,np.array([1,0,1]))
+seq_test(-0.,np.array([1,0,1]))
 
 from numpy.random import uniform
 from math import pi
@@ -87,7 +87,7 @@ def compare_cones(nb_iter_ddc=100, nb_iter_angle=2, angles = None):
 		valid = None
 		for angle in angles:
 			P,N = gen_contact(R = rotation_matrix(angle, y_axis))
-			stable = dynamic_equilibrium(c, ddc, P, N, mass = 54, mu = 0.3)
+			stable = dynamic_equilibrium(c, ddc, P, N, mass = 54., mu = 0.3)
 			if(stable):
 				print 'stable, ', angle
 			if(valid != None and valid != stable):

@@ -112,6 +112,6 @@ def compute_G(p, N, mu = 0.3, n = 3 ,cg = 4, USE_DIAGONAL_GENERATORS = True):
 #  \param m mass of the robot
 #  \param g_vec gravity vector
 #  \return the centroidal wrench w	
-def compute_w(c, ddc, dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,9.81])):
+def compute_w(c, ddc, dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81])):
 	w1 = m * (ddc - g_vec)
 	return array(w1.tolist() + (cross(c, w1) + dL).tolist())

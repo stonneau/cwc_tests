@@ -8,7 +8,7 @@ from numpy import array, vstack, zeros, sqrt, cross
 import numpy as np
 
 from compute_CWC import compute_CWC, is_stable
-from lp_dynamic_eq import dynamic_equilibrium
+from lp_dynamic_eq import dynamic_equilibrium_lp
 from centroidal_dynamics_methods import compute_w
 
                                         
@@ -22,7 +22,7 @@ def test_eq_cwc(P,N,mu,m, g_vec = array([0,0,-9.81])):
 	
 def test_eq_lp(P,N,mu,m):	
 	def eval_wrench(c,ddc):		
-		return dynamic_equilibrium(c, ddc, P, N, m, mu)
+		return dynamic_equilibrium_lp(c, ddc, P, N, m, mu)
 	return eval_wrench
 
 

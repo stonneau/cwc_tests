@@ -20,7 +20,7 @@ n = 3;      # generator size
 cg = 4;     # number of generators per contact
 USE_DIAGONAL_GENERATORS = True;
 CONTACT_SET = 1;
-
+__EPS = 0.00000001
 ## 
 #  Given a list of contact points
 #  as well as a list of associated normals
@@ -51,6 +51,7 @@ def compute_CWC(p, N, mu = 0.3, simplify_cones = False):
 #  redundancies
 #  \param params requires "mu"
 #  \return the CWC H, H w <= 0, where w is the wrench
-def is_stable(H,c, ddc=array([0.,0.,0.]), dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,9.81])):
+def is_stable(H,c, ddc=array([0.,0.,0.]), dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81]), robustness = -__EPS):
 	w = compute_w(c, ddc, dL, m, g_vec)
-	return (H.dot(w)<=0).all()
+	#~ print "max ?", max(H.dot(w))
+	return (H.dot(w)<=-robustness).all()
