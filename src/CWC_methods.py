@@ -10,6 +10,7 @@ sys.path.insert(0, './tools')
 from polytope_conversion_utils import *
 from transformations import euler_matrix
 from numpy import array, vstack, zeros, sqrt, cross, matrix, asmatrix
+from numpy.linalg import norm
 import numpy as np
 
 from math import cos, sin, tan, atan, pi
@@ -44,16 +45,20 @@ def compute_w(c, ddc, dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81]))
 #  compute the gravito inertial wrench cone
 #  \param p array of 3d contact positions
 #  \param N array of 3d contact normals
+#  \param mass mass of the robot
 #  \param mu friction coefficient
 #  \param simplify_cones if true inequality conversion will try to remove 
 #  redundancies
 #  \param params requires "mu"
 #  \return the CWC H, H w <= 0, where w is the wrench. WARNING! TODO: The H matrix is such that 
 # the wrench w is the one present in the ICRA paper 15 of del prete et al., contrary to the current c++ implementation
-def compute_CWC(p, N, mu = 0.3, simplify_cones = False):	
-	eq = Equilibrium("dyn_eq2", 54., cg)  #mass unused
+def compute_CWC(p, N, mass, mu = 0.3, simplify_cones = False):	
+	eq = Equilibrium("dyn_eq2", mass, cg) 
 	eq.setNewContacts(asmatrix(p),asmatrix(N),mu,EquilibriumAlgorithm.EQUILIBRIUM_ALGORITHM_PP)
-	return -eq.getPolytopeInequalities()[0]
+	H, h = eq.getPolytopeInequalities()
+	assert(norm(h) < __EPS), "h is not equal to zero"
+	print "H lines ", H.shape
+	return -H
 
 ## 
 #  Given a cone and a wrench returns whether
@@ -69,6 +74,6 @@ def compute_CWC(p, N, mu = 0.3, simplify_cones = False):
 #  redundancies
 #  \param params requires "mu"
 #  \return the CWC H, H w <= 0, where w is the wrench
-def is_stable(H,c, ddc=array([0.,0.,0.]), dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81]), robustness = 0.):
+def is_stable(H,c=array([0.,0.,0.]), ddc=array([0.,0.,0.]), dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81]), robustness = 0.):
 	w = compute_w(c, ddc, dL, m, g_vec)	
 	return (H.dot(w)<=-robustness).all()

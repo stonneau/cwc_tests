@@ -13,7 +13,7 @@ from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros
 from CWC_methods import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
-from lp_intersect import find_intersection_c, find_intersection_ddc
+from lp_find_point import find_valid_c, find_valid_ddc
 
 import numpy as np
 import math
@@ -50,25 +50,26 @@ def gen_phase(p_a, n_a, p_b, n_b):
 phase_p_1, phase_n_1 = gen_phase(P0, N0, P1, N1)
 phase_p_2, phase_n_2 = P1[:], N1[:]
 phase_p_3, phase_n_3 = gen_phase(P1, N1, P2, N2)
+#~ phase_p_3, phase_n_3 = P2, N2
 
-H1 = compute_CWC(phase_p_1,phase_n_1,mu=0.3)
-H2 = compute_CWC(phase_p_2,phase_n_2,mu=0.3)
-H3 = compute_CWC(phase_p_3,phase_n_3,mu=0.3)
+H1 = compute_CWC(phase_p_1,phase_n_1,mass=54.,mu=0.3)
+H2 = compute_CWC(phase_p_2,phase_n_2,mass=54.,mu=0.3)
+H3 = compute_CWC(phase_p_3,phase_n_3,mass=54.,mu=0.3)
 
 #~ assert (is_stable(H1, wp_1[0:3]) and is_stable(H2, wp_1[0:3])), "found com pos is not in both cones H1, H2"
 
 def _print_res(phasenum, H, c, ddc, phase_p, phase_n, mass = 54., mu = 0.3):	
 	print "phase " + str(phasenum) + " eq (CWC / LP)? "
-	res_cwc =  is_stable(H,c)
+	res_cwc =  is_stable(H,c,ddc)
 	res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, phase_p, phase_n)
 	if(res_cwc != res_lp):
 		print "[ERROR] CWC and LP do not agree: (CWC / LP / Robustness )", res_cwc , res_lp, robustness
 	print "lp found equiliribum to be : ", res_lp
 	
-def test(H_1, H_2):	
+def test(H):	
 	ddc= zeros(3)
 	
-	status, sol_found, wp_1 = find_intersection_c(H_1 ,H_2, ddc)
+	status, sol_found, wp_1 = find_valid_c(H, ddc)
 	if(status != 0):
 		print "[ERROR] LP find_intersection_c is not feasible"
 		return
@@ -76,8 +77,8 @@ def test(H_1, H_2):
 	c= wp_1[0:3][:]
 	
 	if(not sol_found):
-		print "no solution found for 0 acceleration, try to find acceleration with best c"
-		status, sol_found, wp_1 = find_intersection_ddc(H_1 ,H_2, c)
+		print "no solution found for 0 acceleration, try to find acceleration with best c", c
+		status, sol_found, wp_1 = find_valid_ddc(H, c)
 		if(not sol_found):			
 			if(status != 0):
 				print "[ERROR] LP find_intersection_ddc is not feasible"
@@ -86,22 +87,19 @@ def test(H_1, H_2):
 		ddc = wp_1[0:3][:]
 		
 	print "solution, (c / ddc) ", c , " " , ddc 
+	#~ print "margin" , wp_1[3] 
 	
 	
 	
 	
 	_print_res(1, H1, c, ddc, phase_p_1, phase_n_1)	
 	_print_res(2, H2, c, ddc, phase_p_2, phase_n_2)	
-	_print_res(3, H3, c, ddc, phase_p_2, phase_n_3)	
+	_print_res(3, H3, c, ddc, phase_p_3, phase_n_3)	
 	
 	
-#~ print "*********** TEST H1 H1 ********"
-#~ test(H1, H1)
-print "*********** TEST H1 H2 ********"
-test(H2, H1)
-#~ print "*********** TEST H2 H2 ********"
-#~ test(H2, H2)
-#~ print "*********** TEST H2, H3 ********"
-#~ test(H2, H3)
-#~ print "*********** TEST H3, H3 ********"
-#~ test(H3, H3)
+print "*********** TEST H1 ********"
+test(H1)
+print "*********** TEST H2 ********"
+test(H2)
+print "*********** TEST H3 ********"
+test(H3)

@@ -15,7 +15,7 @@ from centroidal_dynamics import *
                
 #test stability via polytope projection                                                                                
 def test_eq_cwc(P,N,mu,m, g_vec = array([0,0,-9.81])):	
-	H = compute_CWC(P,N,mu=mu)	
+	H = compute_CWC(P,N,mass=m,mu=mu)	
 	def eval_wrench(c,ddc, dL=array([0.,0.,0.])):
 		return is_stable(H, c, ddc=ddc, dL=dL, m=m, g_vec=g_vec)
 	return eval_wrench
