@@ -28,13 +28,13 @@ def lp_ineq_4D(K,k):
 	lb =  array([-10000. for _ in range(4)]); #lb[3]=0.;
 	ub =  array([ 10000. for _ in range(4)])
 	Alb = array([-10000. for _ in range(k.shape[0])])
-	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=1000, maxTime=100.0, useWarmStart=True, verb=3)
+	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=100.0, useWarmStart=True, verb=3)
 	(status, res, _) = solver.solve(cost, lb = lb, ub = ub, A_in=K, Alb=Alb, Aub=-k, A_eq=None, b=None)
 	
 	#problem solved or unfeasible
-	p_solved = solver_LP_abstract.LP_status.OPTIMAL and res[3] >= 0
+	p_solved = solver_LP_abstract.LP_status.OPTIMAL and res[3] >= 0.
 	status_ok = status== solver_LP_abstract.LP_status.OPTIMAL
-	return status, status_ok and res[3] >= 0, res
+	return status, status_ok and res[3] >= 0., res
 	
  
 #********* BEGIN find_intersection_c ********************
@@ -48,7 +48,7 @@ def __compute_H(H1, H2):
 def __compute_K_c(H, w1):
 	H_w2 = H[:,3:]
 	w1_cross = crossMatrix(w1)
-	return -H_w2.dot(w1_cross)		
+	return H_w2.dot(-w1_cross)		
 	
 def __compute_K_1_c(H, w1):
 	K_c = __compute_K_c(H, w1)
@@ -102,11 +102,12 @@ def __compute_D(c):
 	res = zeros((6,3));
 	res[0:3,:] = identity(3)
 	res[ 3:,:] = crossMatrix(c)
+	return res
 
 def __compute_d(c,g):
 	res = zeros(6);
-	res[0:3,:] = -g
-	res[ 3:,:] = crossMatrix(c).dot(-g)
+	res[0:3] = -g
+	res[ 3:] = crossMatrix(c).dot(-g)
 	return res
 
 def __compute_K_ddc(m, H, c):
@@ -149,7 +150,7 @@ def __compute_k_ddc(m, H, c, g):
 def find_intersection_ddc(H1, H2, c, m = 54., g_vec=array([0.,0.,-9.81])):
 	H = __compute_H(H1, H2);
 	K_1_ddc = __compute_K_1_ddc(m, H, c)
-	k_ddc   = __compute_k_ddc  (m, H, c, g)
+	k_ddc   = __compute_k_ddc  (m, H, c, g_vec)
 	return lp_ineq_4D(K_1_ddc,k_ddc)
 	
 

@@ -13,7 +13,7 @@ from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros
 from compute_CWC import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
-from lp_intersect import find_intersection_c
+from lp_intersect import find_intersection_c, find_intersection_ddc
 
 import numpy as np
 import math
@@ -26,7 +26,7 @@ z_axis = np.array([0,0,1])
 y_axis = np.array([0,1,0])
 x_axis = np.array([1,0,0])
 z = np.array([0,0,1,1])
-g = np.array([0,0,-9.81])
+g = np.array([0.,0.,-9.81])
 
 def gen_contact(center = np.array([0,0,0]),R = identity_matrix()):
 	c_4 = np.array(center.tolist()+[0])
@@ -65,31 +65,40 @@ def _print_res(phasenum, H, c, ddc, phase_p, phase_n, mass = 54., mu = 0.3):
 		print "[ERROR] CWC and LP do not agree: (CWC / LP / Robustness )", res_cwc , res_lp, robustness
 	print "lp found equiliribum to be : ", res_lp
 	
-def test(H_1, H_2):
-	status, sol_found, wp_1 = find_intersection_c(H_1	,H_2, np.array([0.,0.,0.]))
-	if(status != 0):
-		print "[ERROR] LP is not feasible"
-		return
+def test(H_1, H_2):	
+	ddc= zeros(3)
 	
-	if(not sol_found):
-		print "no solution found"
+	status, sol_found, wp_1 = find_intersection_c(H_1 ,H_2, ddc)
+	if(status != 0):
+		print "[ERROR] LP find_intersection_c is not feasible"
 		return
 		
-	print "solution, ", wp_1
-	
-	
 	c= wp_1[0:3][:]
-	ddc= zeros(3)
+	
+	if(not sol_found):
+		print "no solution found for 0 acceleration, try to find acceleration with best c"
+		status, sol_found, wp_1 = find_intersection_ddc(H_1 ,H_2, c)
+		if(not sol_found):			
+			if(status != 0):
+				print "[ERROR] LP find_intersection_ddc is not feasible"
+			print "no solution found for the two phases"
+			return
+		ddc = wp_1[0:3][:]
+		
+	print "solution, (c / ddc) ", c , " " , ddc 
+	
+	
+	
 	
 	_print_res(1, H1, c, ddc, phase_p_1, phase_n_1)	
 	_print_res(2, H2, c, ddc, phase_p_2, phase_n_2)	
 	_print_res(3, H3, c, ddc, phase_p_2, phase_n_3)	
 	
 	
-print "*********** TEST H1 H1 ********"
-test(H1, H1)
-#~ print "*********** TEST H1 H2 ********"
-#~ test(H1, H2)
+#~ print "*********** TEST H1 H1 ********"
+#~ test(H1, H1)
+print "*********** TEST H1 H2 ********"
+test(H2, H1)
 #~ print "*********** TEST H2 H2 ********"
 #~ test(H2, H2)
 #~ print "*********** TEST H2, H3 ********"

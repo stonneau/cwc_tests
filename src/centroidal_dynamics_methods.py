@@ -100,7 +100,7 @@ def compute_G(p, N, mu = 0.3, n = 3 ,cg = 4, USE_DIAGONAL_GENERATORS = True):
 	G = np.zeros((6,m));
 	for i in range(c):
 		G[:,cg*i:cg*i+cg] = np.dot(M[:,3*i:3*i+3], V[:,cg*i:cg*i+cg]);
-	return G
+	return -G
 
 ## 
 #  Compute the centroidal wrench w

@@ -22,7 +22,7 @@ def test_eq_cwc(P,N,mu,m, g_vec = array([0,0,-9.81])):
 	
 def test_eq_lp(P,N,mu,m):	
 	def eval_wrench(c,ddc):		
-		return dynamic_equilibrium_lp(c, ddc, P, N, m, mu)
+		return dynamic_equilibrium_lp(c, ddc, P, N, m, mu)[0]
 	return eval_wrench
 
 
