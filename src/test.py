@@ -15,6 +15,8 @@ from stability import test_eq_cwc, test_eq_lp
 from lp_dynamic_eq import dynamic_equilibrium_lp as dynamic_equilibrium
 
 import numpy as np
+import math
+
 
 
 #reference rectangle contact
@@ -33,14 +35,14 @@ def gen_contact(center = np.array([0,0,0]),R = identity_matrix()):
 	return np.array(p_rot), np.array(n_rot)
 	
 
-bounds = [-1,1,-1,1,-0,2.1]
-increments = [0.03,0.03,1.]
+bounds = [-5,5,-5,5,-0,10]
+increments = [0.1,0.1,1.]
 
 #~ bounds = [-.5,.5,-.5,.5,-0,2.1]
 #~ increments = [0.1,0.1,1]
 
 #~ P,N = gen_contact()
-def test(beta = 0, mu = 0.3, ddc = np.array([0,0,0]), mass = 54., method = test_eq_lp):
+def test(beta = 0, mu = 0.6, ddc = np.array([0,0,0]), mass = 54., method = test_eq_lp):
 	P,N = gen_contact(R = rotation_matrix(beta, y_axis))
 	return plot_cond(P,N,bounds,increments, ddc, method(P,N,mu,mass))
 
@@ -48,11 +50,11 @@ import matplotlib.pyplot as plt
 
 
 def seq_test(beta=0., ddc=np.array([1,0,0])):
-	test(beta,ddc=np.array([1.,0.,0.]), method = test_eq_cwc)
-	test(beta,ddc=np.array([1.,0.,0.]), method = test_eq_lp)
+	test(beta,ddc=np.array([0.,0.,0.]), method = test_eq_cwc)
+	test(beta,ddc=np.array([0.,0.,0.]), method = test_eq_lp)
 	plt.show()
 	
-seq_test(-0.,np.array([0.,0.,0.]))
+seq_test(-math.pi/8.,np.array([0.,0.,0.]))
 #~ 
 #~ from numpy.random import uniform
 #~ from math import pi
@@ -87,7 +89,7 @@ seq_test(-0.,np.array([0.,0.,0.]))
 		#~ valid = None
 		#~ for angle in angles:
 			#~ P,N = gen_contact(R = rotation_matrix(angle, y_axis))
-			#~ stable = dynamic_equilibrium(c, ddc, P, N, mass = 54., mu = 0.3)
+			#~ stable = dynamic_equilibrium(c, ddc, P, N, mass = 54., mu = 0.6)
 			#~ if(stable):
 				#~ print 'stable, ', angle
 			#~ if(valid != None and valid != stable):

@@ -12,7 +12,7 @@ NUMBER_TYPE = 'float'  # 'float' or 'fraction'
 
 from centroidal_dynamics import *
 
-def dynamic_equilibrium_lp(c, ddc, P, N, mass = 54., mu = 0.3):
+def dynamic_equilibrium_lp(c, ddc, P, N, mass = 54., mu = 0.6):
 	eq = Equilibrium("dyn_eq", mass, 4) 
 	eq.setNewContacts(asmatrix(P),asmatrix(N),mu,EquilibriumAlgorithm.EQUILIBRIUM_ALGORITHM_LP)
 	status, robustness = eq.computeEquilibriumRobustness(asmatrix(c,  dtype=float), asmatrix(ddc,  dtype=float))

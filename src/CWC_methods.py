@@ -52,7 +52,7 @@ def compute_w(c, ddc, dL=array([0.,0.,0.]), m = 54., g_vec=array([0.,0.,-9.81]))
 #  \param params requires "mu"
 #  \return the CWC H, H w <= 0, where w is the wrench. WARNING! TODO: The H matrix is such that 
 # the wrench w is the one present in the ICRA paper 15 of del prete et al., contrary to the current c++ implementation
-def compute_CWC(p, N, mass, mu = 0.3, simplify_cones = False):	
+def compute_CWC(p, N, mass, mu = 0.6, simplify_cones = False):	
 	eq = Equilibrium("dyn_eq2", mass, cg) 
 	eq.setNewContacts(asmatrix(p),asmatrix(N),mu,EquilibriumAlgorithm.EQUILIBRIUM_ALGORITHM_PP)
 	H, h = eq.getPolytopeInequalities()
