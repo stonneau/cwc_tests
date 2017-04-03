@@ -116,5 +116,5 @@ def test(H, mu = 0.6):
 #~ test(H1)
 print "*********** TEST H2 ********"
 test(H2,0.6)
-print "*********** TEST H3 ********"
+#~ print "*********** TEST H3 ********"
 #~ test(H3)
