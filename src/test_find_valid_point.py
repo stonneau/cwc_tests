@@ -13,12 +13,12 @@ from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros
 from CWC_methods import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
-from lp_find_point import find_valid_c, find_valid_ddc
+from lp_find_point import find_valid_c, find_valid_ddc, find_valid_c_ddc
 
 import numpy as np
 import math
 
-mu = 0.6
+mu = 0.8
 mass = 54.
 
 #reference rectangle contact
@@ -38,7 +38,7 @@ def gen_contact(center = np.array([0,0,0]),R = identity_matrix()):
 	return np.array(p_rot), np.array(n_rot)
 	
 P0, N0 = gen_contact(center = np.array([0,0,0]),R = identity_matrix())
-P1, N1 = gen_contact(center = np.array([1,0,0]),R = rotation_matrix(-math.pi/8., y_axis))
+P1, N1 = gen_contact(center = np.array([1,0,0]),R = rotation_matrix(math.pi/6., y_axis))
 P2, N2 = gen_contact(center = np.array([4,0,0]),R = identity_matrix())
 
 def gen_phase(p_a, n_a, p_b, n_b):
@@ -69,52 +69,38 @@ def _print_res(phasenum, H, c, ddc, phase_p, phase_n, mass, mu):
 	res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, phase_p, phase_n, mass = mass, mu = mu)
 	if(res_cwc != res_lp):
 		print "[ERROR] CWC and LP do not agree: (CWC / LP / Robustness )", res_cwc , res_lp, robustness
-	print "lp found equiliribum to be : ", res_lp
+	print "lp found equiliribum to be : ", res_lp, "with margin ", robustness
 	
-def test(H, mu = 0.6):
+def test_find_c(H):
 	
 	ddc= array([ 0.04380291,  0.67393901,  0.7374873 ])
 	c= zeros(3)	
-		#~ 
-	#~ for i in range(10000):
-		#~ c = array([rand() for _ in range(3)])
-		#~ c = c / np.linalg.norm(ddc)
-		#~ ddc = array([rand() for _ in range(3)])
-		#~ ddc = ddc / np.linalg.norm(ddc)
-		#~ if is_stable(H,c,ddc):
-			#~ print "found a valid solution ", c, ddc
-			#~ return
-	#~ print "nerver found one"
-	#~ return
-		#~ 
-	#~ print "shape, ", H.shape
 	status, sol_found, wp_1 = find_valid_c(H, ddc, m = mass)
 	if(status != 0):
 		print "[ERROR] LP find_intersection_c is not feasible"
 		return
 		#~ 
-	c= wp_1[0:3][:]
+	c= wp_1[0:3][:]			
+	print "solution, (c / ddc) ", c , " " , ddc, "margin", wp_1[3]
 	
-	if(not sol_found):
-		print "no solution found for 0 acceleration, try to find acceleration with best c", c
-		status, sol_found, wp_1 = find_valid_ddc(H, c)
-		if(not sol_found):			
-			if(status != 0):
-				print "[ERROR] LP find_intersection_ddc is not feasible"
-			print "no solution found for the two phases"
-			return
-		ddc = wp_1[0:3][:]
-		
-	print "solution, (c / ddc) ", c , " " , ddc
+	_print_res(1, H1, c, ddc, phase_p_1, phase_n_1, mass, mu)	
+	_print_res(2, H2, c, ddc, phase_p_2, phase_n_2, mass, mu)	
+	_print_res(3, H3, c, ddc, phase_p_3, phase_n_3, mass, mu)	
+
+def test_find_c_ddc(H,mu = 0.6):
+	#~ [(c,ddc), success, margin] = find_valid_c_ddc(H, ddc=array([ 0.04380291,  0.67393901,  0.7374873 ]), m = mass)	
+	[(c,ddc), success, margin] = find_valid_c_ddc(H, m = mass)	
+	print "solution found ? ", success
+	print "Best solution, (c / ddc) ", c , " " , ddc, "margin", margin
 	
 	_print_res(1, H1, c, ddc, phase_p_1, phase_n_1, mass, mu)	
 	_print_res(2, H2, c, ddc, phase_p_2, phase_n_2, mass, mu)	
 	_print_res(3, H3, c, ddc, phase_p_3, phase_n_3, mass, mu)	
 	
-	
 #~ print "*********** TEST H1 ********"
 #~ test(H1)
 print "*********** TEST H2 ********"
-test(H2,0.6)
+#~ test_find_c(H2,0.6)
+test_find_c_ddc(H2)
 #~ print "*********** TEST H3 ********"
 #~ test(H3)
