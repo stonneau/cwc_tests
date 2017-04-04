@@ -97,9 +97,9 @@ def test_find_c_ddc(H,mu = 0.6):
 	_print_res(2, H2, c, ddc, phase_p_2, phase_n_2, mass, mu)	
 	_print_res(3, H3, c, ddc, phase_p_3, phase_n_3, mass, mu)	
 	
-def test_find_c_ddc_rand(H,mu = 0.6):
+def test_find_c_ddc_rand(P, N, mu = 0.6):
 	#~ [(c,ddc), success, margin] = find_valid_c_ddc(H, ddc=array([ 0.04380291,  0.67393901,  0.7374873 ]), m = mass)	
-	[(c,ddc), success, margin] = find_valid_c_ddc_random(H, m = mass)	
+	[(c,ddc), success, margin] = find_valid_c_ddc_random(P, N, m = mass, mu = mu)	
 	print "solution found ? ", success
 	print "Best solution, (c / ddc) ", c , " " , ddc, "margin", margin
 	
@@ -113,6 +113,6 @@ def test_find_c_ddc_rand(H,mu = 0.6):
 print "*********** TEST H2 ********"
 test_find_c(H2)
 test_find_c_ddc(H2)
-test_find_c_ddc_rand(H2)
+test_find_c_ddc_rand(phase_p_2,phase_n_2)
 #~ print "*********** TEST H3 ********"
 #~ test(H3)

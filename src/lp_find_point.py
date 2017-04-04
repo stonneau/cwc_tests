@@ -227,23 +227,21 @@ def find_valid_c_ddc_cwc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec
 	
 # Find a combination of c and ddc (assuming dL = 0) such that the generated wrench
 # lies in the code. Achieves this by by random sampling
-#  \param H CWC for a contact phase
+#  \param P Contact points for a contact phase
+#  \param N Contact normals for a contact phase
 #  \param max_iter maximum number of trials before giving up trying to find a solution
-#  \param ddc initial guess for COM acceleration
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
-def find_valid_c_ddc_random(H, max_iter = 10000, m = 54.,  g_vec=array([0.,0.,-9.81])):
+def find_valid_c_ddc_random(P, N, max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81])):
 	c = None; ddc = None;
 	for i in range(max_iter):
 		c = array([rand() for _ in range(3)])
-		#~ c = c / norm(ddc)
 		ddc = array([rand() for _ in range(3)])
 		ddc = ddc / norm(ddc)
-		if is_stable(H,c,ddc):
-			print "found a valid solution ", c, ddc
-			#~ res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, phase_p, phase_n, mass = mass, mu = mu)
-			print "lp agrees ?"
-			return [(c,ddc), True, 0.]
-	print "never found one"
-	return [(c,ddc), False, -1.]
+		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
+		if robustness >= 0:
+			print "found a valid solution in ", i , "trials"
+			return [(c,ddc), True, robustness]
+	print "never found  a valid solution "
+	return [(c,ddc), False, robustness]
