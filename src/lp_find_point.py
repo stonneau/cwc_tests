@@ -9,6 +9,11 @@ sys.path.insert(0, './tools')
 
 from polytope_conversion_utils import crossMatrix
 from numpy import array, zeros, ones, sqrt, cross, identity, asmatrix
+from numpy.random import rand
+from CWC_methods import compute_CWC, is_stable
+from lp_dynamic_eq import dynamic_equilibrium_lp
+from numpy.linalg import norm
+
 NUMBER_TYPE = 'float'  # 'float' or 'fraction'
 __EPS =  2.39847622652e-4
 __ACC_MARGIN =  0
@@ -36,7 +41,12 @@ def lp_ineq_4D(K,k):
 	p_solved = solver_LP_abstract.LP_status.OPTIMAL and res[3] >= 0.
 	status_ok = status== solver_LP_abstract.LP_status.OPTIMAL
 	return status, status_ok , res
-	
+
+# ********************************************************
+# ********************************************************
+# ********************* CWC METHODS **********************
+# ********************************************************
+# ********************************************************
  
 #********* BEGIN find_intersection_c ********************
 def __compute_H(H1, H2):
@@ -75,7 +85,7 @@ def __compute_k_c(H, w1):
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return the solver status, whether the point satisfies the constraints, and the closest point that satisfies them
-def find_valid_c(H, ddc, m = 54., g_vec=array([0.,0.,-9.81])):
+def find_valid_c_cwc(H, ddc, m = 54., g_vec=array([0.,0.,-9.81])):
 	w1 = m * (ddc - g_vec)
 	K_c = __compute_K_c(H, w1)
 	k_c = __compute_k_c(H, w1)
@@ -128,7 +138,7 @@ def __compute_k_ddc(m, H, c, g):
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return the solver status, whether the point satisfies the constraints, and the closest point that satisfies them
-def find_valid_ddc(H, c, m = 54., g_vec=array([0.,0.,-9.81])):
+def find_valid_ddc_cwc(H, c, m = 54., g_vec=array([0.,0.,-9.81])):
 	K_ddc = __compute_K_ddc(m, H, c)
 	k_ddc   = __compute_k_ddc  (m, H, c, g_vec)
 	return lp_ineq_4D(K_ddc,k_ddc)
@@ -145,7 +155,7 @@ def find_valid_ddc(H, c, m = 54., g_vec=array([0.,0.,-9.81])):
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
-def find_valid_c_ddc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec=array([0.,0.,-9.81])):
+def find_valid_c_ddc_cwc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec=array([0.,0.,-9.81])):
 	current_iter = max_iter
 	#~ __c = c[:]
 	__ddc = ddc[:]
@@ -176,7 +186,7 @@ def find_valid_c_ddc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec=arr
 	
 	while(current_iter > 0):
 		current_iter -= 1
-		status, sol_found, wp_1 = find_valid_c(H, __ddc, m = m, g_vec = g_vec)
+		status, sol_found, wp_1 = find_valid_c_cwc(H, __ddc, m = m, g_vec = g_vec)
 		if(status != 0):
 			print "[ERROR] LP find_intersection_c is not feasible"
 			return
@@ -191,7 +201,7 @@ def find_valid_c_ddc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec=arr
 		#~ if(not sol_found):
 		if(True):
 			print "no solution found for acceleration " , __ddc , " (margin ", margin, ") , try to find acceleration with best c", c
-			status, sol_found, wp_1 = find_valid_ddc(H, c)
+			status, sol_found, wp_1 = find_valid_ddc_cwc(H, c)
 			if(not sol_found):			
 				if(status != 0):
 					print "[ERROR] LP find_intersection_ddc is not feasible"
@@ -207,3 +217,33 @@ def find_valid_c_ddc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec=arr
 			print "number of iterations required ", max_iter - current_iter
 			return [(c,__ddc), True, margin]
 	return [(c,__ddc), False, margin]
+	
+	
+# ********************************************************
+# ********************************************************
+# ********************* LP METHODS **********************
+# ********************************************************
+# ********************************************************
+	
+# Find a combination of c and ddc (assuming dL = 0) such that the generated wrench
+# lies in the code. Achieves this by by random sampling
+#  \param H CWC for a contact phase
+#  \param max_iter maximum number of trials before giving up trying to find a solution
+#  \param ddc initial guess for COM acceleration
+#  \param mu friction coefficient
+#  \param g_vec gravity acceleration
+#  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
+def find_valid_c_ddc_random(H, max_iter = 10000, m = 54.,  g_vec=array([0.,0.,-9.81])):
+	c = None; ddc = None;
+	for i in range(max_iter):
+		c = array([rand() for _ in range(3)])
+		#~ c = c / norm(ddc)
+		ddc = array([rand() for _ in range(3)])
+		ddc = ddc / norm(ddc)
+		if is_stable(H,c,ddc):
+			print "found a valid solution ", c, ddc
+			#~ res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, phase_p, phase_n, mass = mass, mu = mu)
+			print "lp agrees ?"
+			return [(c,ddc), True, 0.]
+	print "never found one"
+	return [(c,ddc), False, -1.]
