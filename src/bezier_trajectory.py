@@ -73,12 +73,41 @@ def eval_valid_part(P, N, traj, step = 0.1, m = 54., g_vec=array([0.,0.,-9.81]),
 
 if __name__ == '__main__':
 	
+	import matplotlib
+	#~ matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+	from mpl_toolkits.mplot3d import Axes3D
+	
 	#importing test contacts
 	from contact_data_test import *
 	g_vec=array([0.,0.,-9.81])
 	[c0_ddc0, success, margin] = find_valid_c_ddc_random(phase_p_1, phase_n_1, m = mass, mu = mu)
 	[c1_ddc1, success, margin] = find_valid_c_ddc_random(phase_p_1, phase_n_1, m = mass, mu = mu)
 	b = bezier_traj([c0_ddc0, c1_ddc1], init_dc_ddc = (zero3,c0_ddc0[1]), end_dc_ddc = (zero3,c1_ddc1[1]))
+	
+	print "plot init trajectory"
+	fig = plt.figure()
+	ax = fig.add_subplot(111, projection='3d')
+	n = 100
+	points = [b(0.01 * i)[0] for i in range(100)]
+	xs = [point[0] for point in points]
+	ys = [point[1] for point in points]
+	zs = [point[2] for point in points]
+	ax.scatter(xs, ys, zs, c='b')
+
+	colors = ["r", "b", "g"]
+	#print contact points of first phase
+	#~ for id_c, points in enumerate(p):
+		#~ xs = [point[0] for point in points]
+		#~ ys = [point[1] for point in points]
+		#~ zs = [point[2] for point in points]
+		#~ ax.scatter(xs, ys, zs, c=colors[id_c])
+		
+	ax.set_xlabel('X Label')
+	ax.set_ylabel('Y Label')
+	ax.set_zlabel('Z Label')
+		
+	#~ plt.show()
 	
 	wps = [c0_ddc0, c1_ddc1]
 	init_dc_ddc = (zero3,c0_ddc0[1]);
@@ -97,7 +126,33 @@ if __name__ == '__main__':
 			wps = wps[:-1] + [c_ddc] + [wps[-1]]
 
 	
+	
 	print "found? ", found
+	
+	if found:
+		print "plot trajectory"
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		n = 100
+		points = [b(0.01 * i)[0] for i in range(100)]
+		xs = [point[0] for point in points]
+		ys = [point[1] for point in points]
+		zs = [point[2] for point in points]
+		ax.scatter(xs, ys, zs, c='b')
+
+		colors = ["r", "b", "g"]
+		#print contact points of first phase
+		#~ for id_c, points in enumerate(p):
+			#~ xs = [point[0] for point in points]
+			#~ ys = [point[1] for point in points]
+			#~ zs = [point[2] for point in points]
+			#~ ax.scatter(xs, ys, zs, c=colors[id_c])
+			
+		ax.set_xlabel('X Label')
+		ax.set_ylabel('Y Label')
+		ax.set_zlabel('Z Label')
+			
+		plt.show()
 	#find two points in the cone
 	
 	#~ m = 54.
