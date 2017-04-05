@@ -14,7 +14,7 @@ from CWC_methods import compute_CWC
 import numpy as np
 import math
 
-mu = 0.8
+mu = 0.6
 mass = 54.
 
 #reference rectangle contact
