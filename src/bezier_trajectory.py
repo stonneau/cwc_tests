@@ -9,6 +9,7 @@ sys.path.insert(0, './tools')
 
 from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros, matrix, asmatrix, asarray
+from numpy.linalg import norm
 import numpy as np
 import math
 from lp_dynamic_eq import dynamic_equilibrium_lp
@@ -130,6 +131,12 @@ if __name__ == '__main__':
 	print "found? ", found
 	
 	if found:
+		#check computed traj
+		print norm(b(0)[0] - c0_ddc0[0])
+		print norm(b(1)[0] - c1_ddc1[0])
+		assert norm(b(0)[0] - c0_ddc0[0]) < 1e-10
+		assert norm(b(1)[0] - c1_ddc1[0]) < 1e-10
+		
 		print "plot trajectory"
 		fig = plt.figure()
 		ax = fig.add_subplot(111, projection='3d')
