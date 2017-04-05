@@ -241,7 +241,7 @@ def find_valid_c_ddc_random(P, N, max_iter = 10000, m = 54., mu = 0.6, g_vec=arr
 		ddc = ddc / norm(ddc)
 		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
 		if robustness >= 0:
-			print "found a valid solution in ", i , "trials"
+			print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness
 			return [(c,ddc), True, robustness]
 	print "never found  a valid solution "
 	return [(c,ddc), False, robustness]

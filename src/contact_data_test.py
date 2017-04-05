@@ -27,7 +27,6 @@ z = np.array([0,0,1,1])
 g = np.array([0.,0.,-9.81])
 
 def gen_contact(center = np.array([0,0,0]),R = identity_matrix()):
-	print "R, ", R
 	c_4 = np.array(center.tolist()+[0])
 	p_rot = [R.dot(p_i + c_4)[0:3] for p_i in p ]
 	n_rot = [R.dot(z)[0:3] for _ in range(4) ]
