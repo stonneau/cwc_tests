@@ -82,8 +82,8 @@ if __name__ == '__main__':
 	#importing test contacts
 	from contact_data_test import *
 	g_vec=array([0.,0.,-9.81])
-	[c0_ddc0, success, margin] = find_valid_c_ddc_random(phase_p_1, phase_n_1, m = mass, mu = mu)
-	[c1_ddc1, success, margin] = find_valid_c_ddc_random(phase_p_1, phase_n_1, m = mass, mu = mu)
+	[c0_ddc0, success, margin] = find_valid_c_ddc_random(phase_p_3, phase_n_3, m = mass, mu = mu)
+	[c1_ddc1, success, margin] = find_valid_c_ddc_random(phase_p_2, phase_n_2, m = mass, mu = mu)
 	b = bezier_traj([c0_ddc0, c1_ddc1], init_dc_ddc = (zero3,c0_ddc0[1]), end_dc_ddc = (zero3,c1_ddc1[1]))
 	
 	print "plot init trajectory"
@@ -97,12 +97,11 @@ if __name__ == '__main__':
 	ax.scatter(xs, ys, zs, c='b')
 
 	colors = ["r", "b", "g"]
-	#print contact points of first phase
-	#~ for id_c, points in enumerate(p):
-		#~ xs = [point[0] for point in points]
-		#~ ys = [point[1] for point in points]
-		#~ zs = [point[2] for point in points]
-		#~ ax.scatter(xs, ys, zs, c=colors[id_c])
+	#~ #print contact points of first phase
+	xs = [point[0] for point in phase_p_3]
+	ys = [point[1] for point in phase_p_3]
+	zs = [point[2] for point in phase_p_3]
+	ax.scatter(xs, ys, zs, c=colors[0])
 		
 	ax.set_xlabel('X Label')
 	ax.set_ylabel('Y Label')
@@ -113,6 +112,12 @@ if __name__ == '__main__':
 	wps = [c0_ddc0, c1_ddc1]
 	init_dc_ddc = (zero3,c0_ddc0[1]);
 	end_dc_ddc = (zero3,c1_ddc1[1])
+	
+	
+	xs = [point[0] for (point,_) in wps]
+	ys = [point[1] for (point,_) in wps]
+	zs = [point[2] for (point,_) in wps]
+	ax.scatter(xs, ys, zs, c=colors[2])
 	
 	found = False; max_iters = 100;
 	while (not (found or max_iters == 0)):
@@ -131,11 +136,6 @@ if __name__ == '__main__':
 	print "found? ", found
 	
 	if found:
-		#check computed traj
-		print norm(b(0)[0] - c0_ddc0[0])
-		print norm(b(1)[0] - c1_ddc1[0])
-		assert norm(b(0)[0] - c0_ddc0[0]) < 1e-10
-		assert norm(b(1)[0] - c1_ddc1[0]) < 1e-10
 		
 		print "plot trajectory"
 		fig = plt.figure()
@@ -148,18 +148,25 @@ if __name__ == '__main__':
 		ax.scatter(xs, ys, zs, c='b')
 
 		colors = ["r", "b", "g"]
-		#print contact points of first phase
-		#~ for id_c, points in enumerate(p):
-			#~ xs = [point[0] for point in points]
-			#~ ys = [point[1] for point in points]
-			#~ zs = [point[2] for point in points]
-			#~ ax.scatter(xs, ys, zs, c=colors[id_c])
+		#~ #print contact points of first phase
+		xs = [point[0] for point in phase_p_3]
+		ys = [point[1] for point in phase_p_3]
+		zs = [point[2] for point in phase_p_3]
+		ax.scatter(xs, ys, zs, c=colors[0])
 			
 		ax.set_xlabel('X Label')
 		ax.set_ylabel('Y Label')
 		ax.set_zlabel('Z Label')
+		
+		#~ #print control points
+		xs = [point[0] for (point,_) in wps]
+		ys = [point[1] for (point,_) in wps]
+		zs = [point[2] for (point,_) in wps]
+		ax.scatter(xs, ys, zs, c=colors[2])
 			
-		plt.show()
+		#now draw control points
+			
+	plt.show()
 	#find two points in the cone
 	
 	#~ m = 54.
