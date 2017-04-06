@@ -9,7 +9,7 @@ sys.path.insert(0, './tools')
 
 from polytope_conversion_utils import crossMatrix
 from numpy import array, zeros, ones, sqrt, cross, identity, asmatrix
-from numpy.random import rand
+from numpy.random import rand, uniform
 from CWC_methods import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
 from numpy.linalg import norm
@@ -233,12 +233,11 @@ def find_valid_c_ddc_cwc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
-def find_valid_c_ddc_random(P, N, max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81])):
+def find_valid_c_ddc_random(P, N, bounds_c = [0.,1.,0.,1.,0.,1.], bounds_ddc = [-1.,1.,-1.,1.,-1.,1.], max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81])):
 	c = None; ddc = None;
 	for i in range(max_iter):
-		c = array([rand() for _ in range(3)])
-		ddc = array([rand() for _ in range(3)])
-		ddc = ddc / norm(ddc)
+		c = array([uniform(bounds_c[2*i], bounds_c[2*i+1]) for i in range(3)])
+		ddc = array([uniform(bounds_ddc[2*i], bounds_ddc[2*i+1]) for i in range(3)])
 		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
 		if robustness >= 0:
 			print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness
