@@ -48,7 +48,6 @@ def bezier_traj(cs_ddcs, init_dc_ddc = (zero3,zero3), end_dc_ddc = (zero3,zero3)
 	assert len(cs_ddcs) >= 2, "cannot create com trajectory with less than 2 points"
 	#creating waypoints for curve	
 	waypoints = matrix([ c	for (c,_) in cs_ddcs]).transpose()
-	print "waypoints", waypoints.shape
 	c = curve_constraints();
 	c.init_vel = matrix(init_dc_ddc[0]);
 	c.end_vel  = matrix(end_dc_ddc[0]);
@@ -79,65 +78,70 @@ from mpl_toolkits.mplot3d import Axes3D
 
 g_vec=array([0.,0.,-9.81])
 
-def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec):
+def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec, plot = False):
 	#assert positions given are valid
 	res_lp, robustness =  dynamic_equilibrium_lp(c0_ddc0[0], c0_ddc0[1], P, N, mass = m, mu = mu)
 	assert robustness >= 0., "init config is not in equilibrium (robustness, mu) " + str (robustness) + str(" ") + str (m)
 	res_lp, robustness =  dynamic_equilibrium_lp(c1_ddc1[0], c1_ddc1[1], P, N, mass = m, mu = mu)
 	assert robustness >= 0., "end config is not in equilibrium(robustness, mu) " + str (robustness) + str(" ") + str (m)
 	
-	b = bezier_traj([c0_ddc0, c1_ddc1], init_dc_ddc = (zero3,c0_ddc0[1]), end_dc_ddc = (zero3,c1_ddc1[1]))
-	
-	print "plot init trajectory"
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection='3d')
-	n = 100
-	points = [b(0.01 * i)[0] for i in range(100)]
-	xs = [point[0] for point in points]
-	ys = [point[1] for point in points]
-	zs = [point[2] for point in points]
-	ax.scatter(xs, ys, zs, c='b')
-
-	colors = ["r", "b", "g"]
-	#~ #print contact points of first phase
-	xs = [point[0] for point in P]
-	ys = [point[1] for point in P]
-	zs = [point[2] for point in P]
-	ax.scatter(xs, ys, zs, c=colors[0])
-		
-	ax.set_xlabel('X Label')
-	ax.set_ylabel('Y Label')
-	ax.set_zlabel('Z Label')
-		
-	#~ plt.show()
+	b = bezier_traj([c0_ddc0, c1_ddc1], init_dc_ddc = (zero3,c0_ddc0[1]), end_dc_ddc = (zero3,c1_ddc1[1]))	
+	init_traj_ok, c_ddc, step = eval_valid_part(P, N, b, step = 0.01, m = m, g_vec=g_vec, mu = mu)
 	
 	wps = [c0_ddc0, c1_ddc1]
 	init_dc_ddc = (zero3,c0_ddc0[1]);
 	end_dc_ddc = (zero3,c1_ddc1[1])
 	
+	if plot:
+		print "plot init trajectory"
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		n = 100
+		points = [b(0.01 * i)[0] for i in range(100)]
+		xs = [point[0] for point in points]
+		ys = [point[1] for point in points]
+		zs = [point[2] for point in points]
+		ax.scatter(xs, ys, zs, c='b')
+
+		colors = ["r", "b", "g"]
+		#~ #print contact points of first phase
+		xs = [point[0] for point in P]
+		ys = [point[1] for point in P]
+		zs = [point[2] for point in P]
+		ax.scatter(xs, ys, zs, c=colors[0])
+			
+		ax.set_xlabel('X Label')
+		ax.set_ylabel('Y Label')
+		ax.set_zlabel('Z Label')
+			
+		#~ plt.show()				
+		
+		xs = [point[0] for (point,_) in wps]
+		ys = [point[1] for (point,_) in wps]
+		zs = [point[2] for (point,_) in wps]
+		ax.scatter(xs, ys, zs, c=colors[2])
 	
-	xs = [point[0] for (point,_) in wps]
-	ys = [point[1] for (point,_) in wps]
-	zs = [point[2] for (point,_) in wps]
-	ax.scatter(xs, ys, zs, c=colors[2])
 	
-	found = False; max_iters = 100;
+	wps = [c0_ddc0, c1_ddc1]
+	init_dc_ddc = (zero3,c0_ddc0[1]);
+	end_dc_ddc = (zero3,c1_ddc1[1])
+	found = init_traj_ok; max_iters = 100;
 	while (not (found or max_iters == 0)):
-		max_iters = max_iters-1;
 		print "maxtiters", max_iters
 		b = bezier_traj(wps, init_dc_ddc = init_dc_ddc, end_dc_ddc = end_dc_ddc)
 		found, c_ddc, step = eval_valid_part(P, N, b, step = 0.01, m = m, g_vec=g_vec, mu = mu)
 		print "last step valiud at phase: ", step
 		if(step == 0.0):
-			max_iters =0
+			break
 		if(not found):
 			wps = wps[:-1] + [c_ddc] + [wps[-1]]
+		max_iters = max_iters-1;
 
 	
 	
 	print "found? ", found
 	
-	if found:
+	if found and plot:
 		
 		print "plot trajectory"
 		fig = plt.figure()
@@ -168,7 +172,9 @@ def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec)
 			
 		#now draw control points
 			
-	#~ plt.show()
+		plt.show()
+		
+	return found, init_traj_ok
 
 if __name__ == '__main__':
 	
@@ -221,8 +227,8 @@ if __name__ == '__main__':
 		b = bezier_traj(wps, init_dc_ddc = init_dc_ddc, end_dc_ddc = end_dc_ddc)
 		found, c_ddc, step = eval_valid_part(phase_p_1, phase_n_1, b, step = 0.01, m = mass, g_vec=g_vec, mu = mu)
 		print "last step valiud at phase: ", step
-		#~ if(step == 0.0):
-			#~ max_iters =0
+		if(step == 0.0):
+			break
 		if(not found):
 			wps = wps[:-1] + [c_ddc] + [wps[-1]]
 
