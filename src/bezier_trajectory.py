@@ -78,6 +78,21 @@ from mpl_toolkits.mplot3d import Axes3D
 
 g_vec=array([0.,0.,-9.81])
 
+def filter_wps(wps):
+	res = []
+	#~ res.append(wps[0])
+	#~ wps_tmp = reversed(wps[1,-1])
+	wps_tmp = wps[1:-1][:]
+	assert(len(wps_tmp) == len(wps)-2)
+	for i in range(len(wps_tmp)-1):
+		if not (norm(wps_tmp[i+1][0]-wps_tmp[i][0]) < 0.01):
+			res.append(wps_tmp[i])
+		else:
+			print "removing, ", wps_tmp[i][0], " (", wps_tmp[i+1][0] ,")"
+	res.append(wps_tmp[-1])
+	print "len before / after ", len(wps), len(res) +2
+	return [wps[0]] + res + [wps[-1]]
+
 def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec, plot = False):
 	#assert positions given are valid
 	res_lp, robustness =  dynamic_equilibrium_lp(c0_ddc0[0], c0_ddc0[1], P, N, mass = m, mu = mu)
@@ -135,6 +150,7 @@ def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec,
 			break
 		if(not found):
 			wps = wps[:-1] + [c_ddc] + [wps[-1]]
+			#~ wps = filter_wps(wps)
 		max_iters = max_iters-1;
 
 	

@@ -9,10 +9,13 @@ sys.path.insert(0, './tools')
 
 from transformations import rotation_matrix, identity_matrix
 from numpy import array, cross, zeros, matrix, asmatrix, asarray
+from numpy.random import rand, uniform
 from numpy.linalg import norm
 import numpy as np
 import math
 from numpy.random import rand
+from CWC_methods import compute_CWC, is_stable
+from lp_dynamic_eq import dynamic_equilibrium_lp
 
 zero3 = array([0.,0.,0.])
 
@@ -58,7 +61,7 @@ def load_data(filename):
 	f.close()
 	return res
 	
-from bezier_trajectory import connect_two_points
+from bezier_trajectory import *
 from lp_find_point import find_valid_c_random, find_valid_c_ddc_random
 from lp_dynamic_eq import dynamic_equilibrium_lp
 
@@ -105,6 +108,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 
 
 
+
 results = { "num_quasi_static" : 0, "trials_fail" :[], "trials_success" :[] }
 
 def saveTrial(c_ddc_0  , c_ddc_1, P, N, success):
@@ -116,7 +120,7 @@ def saveTrial(c_ddc_0  , c_ddc_1, P, N, success):
 
 mu = 0.6
 m = 55.88363633
-def main(idx = 0, num_iters = 1000, plt =False):
+def gen_non_trivial_data(idx = 0, num_iters = 100, plt =False):
 	all_data = load_data('stair_bauzil_contacts_data')
 	for i in range(num_iters):		
 		quasi_static_sol, c_ddc_0, c_ddc_mid, c_ddc_1, P0, N0, P1, N1 = generate_problem(all_data[idx], test_quasi_static=i==0, m = m, mu = mu)
@@ -124,19 +128,109 @@ def main(idx = 0, num_iters = 1000, plt =False):
 			global results
 			results['num_quasi_static'] += 1			
 			print "quasi static solution, "
-			return  c_ddc_mid
-		else:
-			found, init_traj_ok = connect_two_points(c_ddc_0  , c_ddc_mid, P0, N0, mu = mu, m =  m, plot = plt)
-			if(not init_traj_ok):
-				saveTrial(c_ddc_0  , c_ddc_mid, P0, N0, found)
-			found, init_traj_ok = connect_two_points(c_ddc_mid, c_ddc_1  , P1, N1, mu = mu, m =  m, plot = plt)
-			if(not init_traj_ok):
-				saveTrial(c_ddc_mid, c_ddc_1  , P1, N1, found)
+			#~ return  c_ddc_mid
+		#~ else:
+		#~ found, init_traj_ok = connect_two_points(c_ddc_0  , c_ddc_mid, P0, N0, mu = mu, m =  m, plot = plt)
+		#~ if(not init_traj_ok):
+			#~ saveTrial(c_ddc_0  , c_ddc_mid, P0, N0, found)
+		found, init_traj_ok = connect_two_points(c_ddc_mid, c_ddc_1  , P1, N1, mu = mu, m =  m, plot = plt)
+		if(not init_traj_ok):
+			saveTrial(c_ddc_mid, c_ddc_1  , P1, N1, found)
 	print "num success, ", len(results['trials_success'])
 	print "num success, ", len(results['trials_success'])
 	print "num fails, ", len(results['trials_fail'] )
 	print "num quasi static , ", results["num_quasi_static"]
-	print "num additional instant successes", num_iters*2 - results["num_quasi_static"] * 2 - (len(trials_success) + len(trials_fail))
+	print "num additional instant successes", num_iters - (len(results['trials_success']) + len(results['trials_fail']))
+
+
+zero3 = array([0.,0.,0.])
+
+def gen_random_waypoint(c0, c1):
+	print "c0", c0	
+	bounds_c = flatten([[min(c0[i], c1[i])-0.1, max(c0[i], c1[i])+0.1] for i in range(3)]) # arbitrary
+	rand_c = array([uniform(bounds_c[2*i], bounds_c[2*i+1]) for i in range(3)])
+	return (rand_c,zero3 ) #acceleration not considered
+
+def gen_random_traj(c_ddc_0 , c_ddc_1, P, N):
+	for num_waypoints in range(1,4):
+		for num_iter in range(1000):
+			waypoints = [c_ddc_0] + [gen_random_waypoint(c_ddc_0[0], c_ddc_1[0]) for _ in range(num_waypoints)] + [c_ddc_1]
+			b = bezier_traj(waypoints, init_dc_ddc = c_ddc_0, end_dc_ddc = c_ddc_1)
+			found, c_ddc, step = eval_valid_part(P, N, b, step = 0.01, m = m, g_vec=g_vec, mu = mu)
+			if(found):
+				print "found !"
+				return True
+	return False
+
+from cwc import OptimError, cone_optimization
+
+def check_feasibility(c_ddc_0, c_ddc_1, P, N, cone):
+	x_input = [c_ddc_0[0].tolist() + c_ddc_0[1].tolist(), c_ddc_1[0].tolist() + c_ddc_1[1].tolist()]	
+	try:
+		#~ cone = compute_CWC(P, N, mass=m, mu = mu, simplify_cones = False)
+		print "is stable 0 , ", is_stable(cone,c_ddc_0[0],c_ddc_0[1], m = m )
+		print "is stable 1 , ", is_stable(cone,c_ddc_1[0],c_ddc_1[1], m = m )
+		var_final, params = cone_optimization([P for _ in range(3)], [N for _ in range(3)], x_input, [0.3, 0.7, 1.], 0.1, mu =mu, mass = m, cones = [cone for _ in range(3)], simplify_cones = False)
+		
+	except:
+		print "OPTIM FAILED: not feasible"
+		return False#check result is feasiblt
+	cs = var_final ['c'] 
+	ddcs = var_final ['ddc']
+	dLs = var_final ['dL']
+	for i in range(len(cs)):
+		c = cs[i]; ddc = ddcs[i]
+		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
+		print "robustness ", robustness
+		cone_stable = is_stable(cone,c,ddc, m = m )
+		print "cone stable ", cone_stable
+		if not cone_stable:
+			print "dL", dLs[i]
+			print "result from optim not feasible"
+			return False
+	print "feasible"
+	return True
+			
+def gen_trajs(res,gen_random=True):
+	successes = 0
+	fails = 0
+	#~ for (c_ddc_0 , c_ddc_1, P, N) in results['trials_fail']+results['trials_success']:
+	cone = None
+	for (c_ddc_0 , c_ddc_1, P, N) in results['trials_success']:
+		if cone == None:
+			cone = compute_CWC(P, N, mass=m, mu = mu, simplify_cones = False)
+		if gen_random:
+			if  gen_random_traj(c_ddc_0 , c_ddc_1, P, N):
+				successes+=1
+			else:
+				fails+=1
+		else:
+			#~ found, init_traj_ok = connect_two_points(c_ddc_0  , c_ddc_1, P, N, mu = mu, m =  m, plot = False)	
+			found = check_feasibility(c_ddc_0, c_ddc_1, P, N, cone)
+			if  found:
+				successes+=1
+			else:
+				fails+=1
+			
+	print "num successes in generating random trajectory: ", successes
+	print "num failures in generating random trajectory: ", fails
+
+def save_results(fname ="test"):
+	from pickle import dump
+	f = open(fname, "w+")
+	dump(results, f)
+	f.close()
+
+def load_results(fname ="test"):
+	from pickle import load
+	f = open(fname, "r+")
+	res = load (f)
+	f.close()
+	return res
 
 if __name__ == '__main__':
-	main(0)
+	#~ gen_non_trivial_data(0)
+	#~ save_results()
+	
+	results = load_results()
+	gen_trajs(results, False)
