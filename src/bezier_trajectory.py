@@ -58,16 +58,22 @@ def bezier_traj(cs_ddcs, init_dc_ddc = (zero3,zero3), end_dc_ddc = (zero3,zero3)
 	return __compute_c_ddc_t(c_t)
 	
 
-def eval_valid_part(P, N, traj, step = 0.1, m = 54., g_vec=array([0.,0.,-9.81]), mu = 0.6):
+def eval_valid_part(P, N, traj, step = 0.1, m = 54., g_vec=array([0.,0.,-9.81]), mu = 0.6, use_cone_for_eq = None, rob = 0):
 	num_steps = int(1./step)
 	previous_c_ddc = traj(0)
 	for i in range(1, num_steps):
 		(c,ddc) = traj(float(i)*step)
-		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
-		if(robustness >= 0.):
+		if(use_cone_for_eq != None):
+			if is_stable(use_cone_for_eq,c=c, ddc=ddc, dL=array([0.,0.,0.]), m = m, g_vec=array([0.,0.,-9.81]), robustness = 0.):
+				robustness = 1
+			else:
+				robustness = -1
+		else:
+			res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
+		if(robustness >= rob):
 			previous_c_ddc = (c,ddc)
 		else:
-			print "failed with robustness ", robustness, "at ", i, "point ", previous_c_ddc
+			print "failed with robustness ", robustness, "at ", i, "point ", previous_c_ddc, "rob ?", rob
 			return False, previous_c_ddc , float(i-1) * step
 	return True, previous_c_ddc, 1.
 
@@ -93,7 +99,7 @@ def filter_wps(wps):
 	print "len before / after ", len(wps), len(res) +2
 	return [wps[0]] + res + [wps[-1]]
 
-def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec, plot = False):
+def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec, use_cone_for_eq = None, plot = False, dt = 0.01, rob = 0):
 	#assert positions given are valid
 	res_lp, robustness =  dynamic_equilibrium_lp(c0_ddc0[0], c0_ddc0[1], P, N, mass = m, mu = mu)
 	assert robustness >= 0., "init config is not in equilibrium (robustness, mu) " + str (robustness) + str(" ") + str (m)
@@ -144,7 +150,7 @@ def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec,
 	while (not (found or max_iters == 0)):
 		print "maxtiters", max_iters
 		b = bezier_traj(wps, init_dc_ddc = init_dc_ddc, end_dc_ddc = end_dc_ddc)
-		found, c_ddc, step = eval_valid_part(P, N, b, step = 0.01, m = m, g_vec=g_vec, mu = mu)
+		found, c_ddc, step = eval_valid_part(P, N, b, step = dt, m = m, g_vec=g_vec, mu = mu, use_cone_for_eq = use_cone_for_eq, rob = rob)
 		print "last step valiud at phase: ", step
 		if(step == 0.0):
 			break
