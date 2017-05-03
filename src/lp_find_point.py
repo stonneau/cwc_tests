@@ -29,6 +29,7 @@ def __compute_K_c_kin(K_c,Kin):
 	K_c_kin = zeros((K_c.shape[0] + K_kin.shape[0], K_c.shape[1]) )
 	print "k_c shape ", K_c.shape
 	print "K_kin shape ", K_kin.shape
+	print "K_kin", K_kin
 	print "K_c_kin shape ", K_c_kin.shape
 	K_c_kin [:K_c.shape[0], :] = K_c
 	K_c_kin [K_c.shape[0]:,:] = K_kin
@@ -38,28 +39,35 @@ def __compute_k_c_kin(k_c,Kin):
 	if Kin == None:
 		return k_c
 	k_kin = Kin[1]
-	k_kin = Kin[1]
-	print 
+	print "k_kin", k_kin
 	k_c_kin = zeros(k_c.shape[0] + k_kin.shape[0])
 	k_c_kin[:k_c.shape[0]] = k_c[:]
 	k_c_kin[k_c.shape[0]:] =-k_kin[:]
 	return k_c_kin
 
 
-def __compute_K_1(K):
-	K_1 = ones((K.shape[0],4))
+def __compute_K_1(K, ones_range):
+	K_1 = zeros((K.shape[0],4))
+	K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
 	K_1[:,:3] = K[:]
 	return K_1
  
  
-def lp_ineq_4D(K,k):
-	K_1 = __compute_K_1(K)
+def lp_ineq_4D(K,k, ones_range = None):
+	if(ones_range == None):
+		ones_range = (0, K.shape[0])
+	K_1 = __compute_K_1(K, ones_range)
 	cost = array([0.,0.,0.,-1.])
 	lb =  array([-100000000. for _ in range(4)]);
 	ub =  array([ 100000000. for _ in range(4)])
 	Alb = array([-100000000. for _ in range(k.shape[0])])
 	#~ Alb = empty((k.shape[0]))
-	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=True, verb=3)
+	print "lb" , lb
+	print "ub" ,  ub
+	print "A_in" , K_1
+	print "Alb" , Alb
+	print "k" , k
+	solver = solver_LP_abstract.getNewSolver('cvxopt', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=1)
 	(status, res, rest) = solver.solve(cost, lb = lb, ub = ub, A_in=K_1, Alb=Alb, Aub=-k, A_eq=None, b=None)
 		
 	#problem solved or unfeasible
@@ -116,13 +124,16 @@ def __compute_k_c(H, w1):
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return the solver status, whether the point satisfies the constraints, and the closest point that satisfies them
-def find_valid_c_cwc(H, ddc, Kin = None, m = 54., g_vec=array([0.,0.,-9.81])):
+def find_valid_c_cwc(H, ddc, Kin = None, only_max_kin = False, m = 54., g_vec=array([0.,0.,-9.81])):
 	w1 = m * (ddc - g_vec)
 	K_c = __compute_K_c(H, w1)
 	k_c = __compute_k_c(H, w1)
 	K_c_kin = __compute_K_c_kin(K_c,Kin)
 	k_c_kin = __compute_k_c_kin(k_c,Kin)
-	return lp_ineq_4D(K_c_kin,k_c_kin)
+	one_range = None
+	if(only_max_kin):
+		one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
+	return lp_ineq_4D(K_c_kin,k_c_kin, one_range)
 
 #********* END find_intersection_c ********************
 	

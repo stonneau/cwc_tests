@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, './tools')
 
 from transformations import rotation_matrix, identity_matrix
-from numpy import array, cross, zeros, matrix, asmatrix, asarray
+from numpy import asarray, array, cross, zeros, ones, identity, matrix, asmatrix, asarray
 from numpy.random import rand, uniform
 from numpy.linalg import norm
 import numpy as np
@@ -33,15 +33,18 @@ def make_state(fullBody, P, N, config):
 	res["ddc"] = zero3
 	return res	
 
-def gen_sequence_data_from_state(fullBody, stateid, configs):	
+def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu = 0.5):	
 	print "state id", stateid
 	#first compute com #acceleration always assumed to be 0 and vel as wel	
 	Ps, Ns = fullBody.computeContactPoints(stateid)
 	#~ states = [make_state(fullBody, Ps[i], Ns[i], configs[stateid+i], viewer) for i in range(0,3,2)]
 	states = []
 	states += [make_state(fullBody, Ps[0], Ns[0], configs[stateid]  )]
-	states += [make_state(fullBody, Ps[-1], Ns[-1], configs[stateid+1])]
-	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]) }
+	states += [make_state(fullBody, Ps[-1], Ns[-1], configs[stateid+1])]	
+	K0 = asarray(compute_CWC(Ps[0], Ns[0], mass=m, mu = mu, simplify_cones = False))
+	K1 = asarray(compute_CWC(Ps[1], Ns[1], mass=m, mu = mu, simplify_cones = False))
+	K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
+	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1, K2] }
 	
 
 def gen_all_sequence_state(fullBody, configs):
@@ -106,7 +109,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	
 	return quasi_static_sol, (c0, ddc0), c_ddc_mid, (c1, ddc1), P_0, N_0, P_1, N_1
 
-def solve_quasi_static(data, c_bounds, c_sample_bounds = None, m = 55.88363633, mu = 0.5):
+def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5):
 	# generate a candidate c, ddc valid for the intermediary phase	
 	P_mid = data["inter_contacts"]["P"]
 	N_mid = data["inter_contacts"]["N"]
@@ -120,16 +123,30 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, m = 55.88363633, 
 	c1 = data["end_state"  ]["c"]
 	dc1 = data["end_state"  ]["dc"]
 	ddc1 = data["end_state"  ]["ddc"]
-	
+	#~ K0 = data["cones"][0]	
+	K1 = data["cones"][1]	
+	#~ K2 = data["cones"][2]
 	#first try to find quasi static solution
 	quasi_static_sol = False
 	success = False
 	if(c_sample_bounds == None):
 		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.2, max(c0[i], c1[i])+0.2] for i in range(3)]) # arbitrary
-	[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
-	print "valid ? ", success, margin
-	[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
-	print "valid ? ", success2, margin
+	if use_rand:
+		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+		[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+	else:
+		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[0], only_max_kin = True, m = m)
+		margin = res[3]
+		res[2]+=0.10
+		c_ddc_1 = (res[0:3], zero3)
+		print "valid ? ", success, margin
+		
+		success2 , status_ok, res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[1],only_max_kin = True, m = m)
+		#~ success2, status_ok , res = find_valid_c_cwc(K1, zero3,  m = m)
+		margin = res[3]
+		res[2]+=0.10
+		c_ddc_2 = (res[0:3], zero3)
+		print "valid ? ", success, margin
 	
 	return success and success2, c_ddc_1, c_ddc_2
 
