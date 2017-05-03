@@ -26,7 +26,7 @@ zero3 = array([0.,0.,0.])
 
 def __compute_ddc_t(b_curve, m, g_vec):	
 	def ddc_of_t(t):
-		print "b_curve(t) ", b_curve(t)
+		#~ print "b_curve(t) ", b_curve(t)
 		return asarray((b_curve(t)[0:3,:] / m) + g_vec).flatten()
 	return ddc_of_t
 	
@@ -73,7 +73,7 @@ def eval_valid_part(P, N, traj, step = 0.1, m = 54., g_vec=array([0.,0.,-9.81]),
 		if(robustness >= rob):
 			previous_c_ddc = (c,ddc)
 		else:
-			print "failed with robustness ", robustness, "at ", i, "point ", previous_c_ddc, "rob ?", rob
+			#~ print "failed with robustness ", robustness, "at ", i, "point ", previous_c_ddc, "rob ?", rob
 			return False, previous_c_ddc , float(i-1) * step
 	return True, previous_c_ddc, 1.
 
@@ -96,62 +96,60 @@ def filter_wps(wps):
 		else:
 			print "removing, ", wps_tmp[i][0], " (", wps_tmp[i+1][0] ,")"
 	res.append(wps_tmp[-1])
-	print "len before / after ", len(wps), len(res) +2
+	#~ print "len before / after ", len(wps), len(res) +2
 	return [wps[0]] + res + [wps[-1]]
 
 def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec, use_cone_for_eq = None, plot = False, dt = 0.01, rob = 0):
 	#assert positions given are valid
-	res_lp, robustness =  dynamic_equilibrium_lp(c0_ddc0[0], c0_ddc0[1], P, N, mass = m, mu = mu)
-	assert robustness >= 0., "init config is not in equilibrium (robustness, mu) " + str (robustness) + str(" ") + str (m)
-	res_lp, robustness =  dynamic_equilibrium_lp(c1_ddc1[0], c1_ddc1[1], P, N, mass = m, mu = mu)
-	assert robustness >= 0., "end config is not in equilibrium(robustness, mu) " + str (robustness) + str(" ") + str (m)
+	#~ res_lp, robustness =  dynamic_equilibrium_lp(c0_ddc0[0], c0_ddc0[1], P, N, mass = m, mu = mu)
+	#~ assert robustness >= 0., "init config is not in equilibrium (robustness, mu) " + str (robustness) + str(" ") + str (m)
+	#~ res_lp, robustness =  dynamic_equilibrium_lp(c1_ddc1[0], c1_ddc1[1], P, N, mass = m, mu = mu)
+	#~ assert robustness >= 0., "end config is not in equilibrium(robustness, mu) " + str (robustness) + str(" ") + str (m)
 	
 	b = bezier_traj([c0_ddc0, c1_ddc1], init_dc_ddc = (zero3,c0_ddc0[1]), end_dc_ddc = (zero3,c1_ddc1[1]))	
-	init_traj_ok, c_ddc, step = eval_valid_part(P, N, b, step = 0.01, m = m, g_vec=g_vec, mu = mu)
+	init_traj_ok, c_ddc, step = eval_valid_part(P, N, b, step = 0.1, m = m, g_vec=g_vec, mu = mu)
 	
 	wps = [c0_ddc0, c1_ddc1]
 	init_dc_ddc = (zero3,c0_ddc0[1]);
 	end_dc_ddc = (zero3,c1_ddc1[1])
 	
-	if plot:
-		print "plot init trajectory"
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		n = 100
-		points = [b(0.01 * i)[0] for i in range(100)]
-		xs = [point[0] for point in points]
-		ys = [point[1] for point in points]
-		zs = [point[2] for point in points]
-		ax.scatter(xs, ys, zs, c='b')
-
-		colors = ["r", "b", "g"]
-		#~ #print contact points of first phase
-		xs = [point[0] for point in P]
-		ys = [point[1] for point in P]
-		zs = [point[2] for point in P]
-		ax.scatter(xs, ys, zs, c=colors[0])
-			
-		ax.set_xlabel('X Label')
-		ax.set_ylabel('Y Label')
-		ax.set_zlabel('Z Label')
-			
-		#~ plt.show()				
-		
-		xs = [point[0] for (point,_) in wps]
-		ys = [point[1] for (point,_) in wps]
-		zs = [point[2] for (point,_) in wps]
-		ax.scatter(xs, ys, zs, c=colors[2])
+	#~ if plot:
+		#~ print "plot init trajectory"
+		#~ fig = plt.figure()
+		#~ ax = fig.add_subplot(111, projection='3d')
+		#~ n = 100
+		#~ points = [b(0.01 * i)[0] for i in range(100)]
+		#~ xs = [point[0] for point in points]
+		#~ ys = [point[1] for point in points]
+		#~ zs = [point[2] for point in points]
+		#~ ax.scatter(xs, ys, zs, c='b')
+#~ 
+		#~ colors = ["r", "b", "g"]
+		#print contact points of first phase
+		#~ xs = [point[0] for point in P]
+		#~ ys = [point[1] for point in P]
+		#~ zs = [point[2] for point in P]
+		#~ ax.scatter(xs, ys, zs, c=colors[0])
+			#~ 
+		#~ ax.set_xlabel('X Label')
+		#~ ax.set_ylabel('Y Label')
+		#~ ax.set_zlabel('Z Label')
+		#~ 
+		#~ xs = [point[0] for (point,_) in wps]
+		#~ ys = [point[1] for (point,_) in wps]
+		#~ zs = [point[2] for (point,_) in wps]
+		#~ ax.scatter(xs, ys, zs, c=colors[2])
 	
 	
 	wps = [c0_ddc0, c1_ddc1]
 	init_dc_ddc = (zero3,c0_ddc0[1]);
 	end_dc_ddc = (zero3,c1_ddc1[1])
-	found = init_traj_ok; max_iters = 100;
+	found = init_traj_ok; max_iters = 22;
 	while (not (found or max_iters == 0)):
-		print "maxtiters", max_iters
+		#~ print "maxtiters", max_iters
 		b = bezier_traj(wps, init_dc_ddc = init_dc_ddc, end_dc_ddc = end_dc_ddc)
 		found, c_ddc, step = eval_valid_part(P, N, b, step = dt, m = m, g_vec=g_vec, mu = mu, use_cone_for_eq = use_cone_for_eq, rob = rob)
-		print "last step valiud at phase: ", step
+		#~ print "last step valiud at phase: ", step
 		if(step == 0.0):
 			break
 		if(not found):
@@ -161,40 +159,40 @@ def connect_two_points(c0_ddc0, c1_ddc1, P, N, m = 54., mu = 0.3, g_vec = g_vec,
 
 	
 	
-	print "found? ", found
+	#~ print "found? ", found
 	
-	if found and plot:
-		
-		print "plot trajectory"
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		n = 100
-		points = [b(0.01 * i)[0] for i in range(100)]
-		xs = [point[0] for point in points]
-		ys = [point[1] for point in points]
-		zs = [point[2] for point in points]
-		ax.scatter(xs, ys, zs, c='b')
-
-		colors = ["r", "b", "g"]
-		#~ #print contact points of first phase
-		xs = [point[0] for point in P]
-		ys = [point[1] for point in P]
-		zs = [point[2] for point in P]
-		ax.scatter(xs, ys, zs, c=colors[0])
-			
-		ax.set_xlabel('X Label')
-		ax.set_ylabel('Y Label')
-		ax.set_zlabel('Z Label')
-		
-		#~ #print control points
-		xs = [point[0] for (point,_) in wps]
-		ys = [point[1] for (point,_) in wps]
-		zs = [point[2] for (point,_) in wps]
-		ax.scatter(xs, ys, zs, c=colors[2])
-			
+	#~ if found and plot:
+		#~ 
+		#~ print "plot trajectory"
+		#~ fig = plt.figure()
+		#~ ax = fig.add_subplot(111, projection='3d')
+		#~ n = 100
+		#~ points = [b(0.01 * i)[0] for i in range(100)]
+		#~ xs = [point[0] for point in points]
+		#~ ys = [point[1] for point in points]
+		#~ zs = [point[2] for point in points]
+		#~ ax.scatter(xs, ys, zs, c='b')
+#~ 
+		#~ colors = ["r", "b", "g"]
+		#print contact points of first phase
+		#~ xs = [point[0] for point in P]
+		#~ ys = [point[1] for point in P]
+		#~ zs = [point[2] for point in P]
+		#~ ax.scatter(xs, ys, zs, c=colors[0])
+			#~ 
+		#~ ax.set_xlabel('X Label')
+		#~ ax.set_ylabel('Y Label')
+		#~ ax.set_zlabel('Z Label')
+		#~ 
+		#print control points
+		#~ xs = [point[0] for (point,_) in wps]
+		#~ ys = [point[1] for (point,_) in wps]
+		#~ zs = [point[2] for (point,_) in wps]
+		#~ ax.scatter(xs, ys, zs, c=colors[2])
+			#~ 
 		#now draw control points
 			
-		plt.show()
+		#~ plt.show()
 		
 	return found, init_traj_ok
 

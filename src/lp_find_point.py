@@ -255,7 +255,7 @@ def find_valid_c_ddc_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bo
 					return [(c,ddc), True, robustness]
 			else:
 				return [(c,ddc), True, robustness]
-	print "never found  a valid solution "
+	#~ print "never found  a valid solution "
 	return [(c,ddc), False, robustness]
 	
 # Find a c (assuming dL = 0 and ddc=0) such that the generated wrench
@@ -272,14 +272,14 @@ def find_valid_c_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bounds
 		c = array([uniform(bounds_c[2*i], bounds_c[2*i+1]) for i in range(3)])
 		ddc = array([0.,0.,0.])
 		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
-		if robustness >= 0:
-			print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness
+		if robustness >= 0.01:
+			#~ print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness
 			if Kin != None:
-				print "checking for boundaries, ", (Kin[0].dot(c)).T
+				#~ print "checking for boundaries, ", (Kin[0].dot(c)).T
 				if(Kin[0].dot(c)<=Kin[1]).all():
-					print "boundaries satisfied"
+					#~ print "boundaries satisfied"
 					return [(c,ddc), True, robustness]
 			else:
 				return [(c,ddc), True, robustness]
-	print "never found  a valid solution "
+	#~ print "never found  a valid solution "
 	return [(c,ddc), False, robustness]

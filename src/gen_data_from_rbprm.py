@@ -106,7 +106,59 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	
 	return quasi_static_sol, (c0, ddc0), c_ddc_mid, (c1, ddc1), P_0, N_0, P_1, N_1
 
+def solve_quasi_static(data, c_bounds, c_sample_bounds = None, m = 55.88363633, mu = 0.5):
+	# generate a candidate c, ddc valid for the intermediary phase	
+	P_mid = data["inter_contacts"]["P"]
+	N_mid = data["inter_contacts"]["N"]
+	P_0   = data["start_state"]["P"]
+	N_0   = data["start_state"]["N"]
+	P_1   = data["end_state"]["P"]
+	N_1   = data["end_state"]["N"]
+	c0 = data["start_state"]["c"]
+	dc0 = data["start_state"]["dc"]
+	ddc0 = data["start_state"]["ddc"]
+	c1 = data["end_state"  ]["c"]
+	dc1 = data["end_state"  ]["dc"]
+	ddc1 = data["end_state"  ]["ddc"]
+	
+	#first try to find quasi static solution
+	quasi_static_sol = False
+	success = False
+	if(c_sample_bounds == None):
+		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.2, max(c0[i], c1[i])+0.2] for i in range(3)]) # arbitrary
+	[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+	print "valid ? ", success, margin
+	[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+	print "valid ? ", success2, margin
+	
+	return success and success2, c_ddc_1, c_ddc_2
 
+def solve_dyn(data, c_bounds, c_sample_bounds = None, m = 55.88363633, mu = 0.5):
+	# generate a candidate c, ddc valid for the intermediary phase	
+	P_mid = data["inter_contacts"]["P"]
+	N_mid = data["inter_contacts"]["N"]
+	P_0   = data["start_state"]["P"]
+	N_0   = data["start_state"]["N"]
+	P_1   = data["end_state"]["P"]
+	N_1   = data["end_state"]["N"]
+	c0 = data["start_state"]["c"]
+	dc0 = data["start_state"]["dc"]
+	ddc0 = data["start_state"]["ddc"]
+	c1 = data["end_state"  ]["c"]
+	dc1 = data["end_state"  ]["dc"]
+	ddc1 = data["end_state"  ]["ddc"]
+	
+	#first try to find quasi static solution
+	quasi_static_sol = False
+	success = False
+	if(c_sample_bounds == None):
+		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.1, max(c0[i], c1[i])+0.1] for i in range(3)]) # arbitrary
+	[c_ddc_1, success, margin]  = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+	print "valid ? ", success, margin
+	[c_ddc_2, success2, margin] = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+	print "valid ? ", success2, margin
+	
+	return success and success2, c_ddc_1, c_ddc_2
 
 
 results = { "num_quasi_static" : 0, "trials_fail" :[], "trials_success" :[] }
@@ -120,26 +172,32 @@ def saveTrial(c_ddc_0  , c_ddc_1, P, N, success, K):
 
 mu = 0.6
 m = 55.88363633
+
+from time import time as clock
+
 def gen_non_trivial_data(idx = 0, num_iters = 100, plt =False):
 	all_data = load_data('stair_bauzil_contacts_data')
 	quasi_static_sol, c_ddc_0, c_ddc_mid, c_ddc_1, P0, N0, P1, N1 = generate_problem(all_data[idx], test_quasi_static=False, m = m, mu = mu)
 	K0 = compute_CWC(P0, N0, mass=m, mu = mu, simplify_cones = False)
 	K1 = compute_CWC(P1, N1, mass=m, mu = mu, simplify_cones = False)
+	start = clock()
 	for i in range(num_iters):		
 		quasi_static_sol, c_ddc_0, c_ddc_mid, c_ddc_1, P0, N0, P1, N1 = generate_problem(all_data[idx], test_quasi_static=i==0, m = m, mu = mu)
-		if(quasi_static_sol):
-			global results
-			results['num_quasi_static'] += 1			
-			print "quasi static solution, "
+		#~ if(quasi_static_sol):
+			#~ global results
+			#~ results['num_quasi_static'] += 1			
+			#~ print "quasi static solution, "
 			#~ return  c_ddc_mid
 		#~ else:
-		
-		found, init_traj_ok = connect_two_points(c_ddc_0  , c_ddc_mid, P0, N0, mu = mu, m =  m,use_cone_for_eq = K0, plot = plt)
-		if(not init_traj_ok):
-			saveTrial(c_ddc_0  , c_ddc_mid, P0, N0, found, K0)
-		found, init_traj_ok = connect_two_points(c_ddc_mid, c_ddc_1  , P1, N1, mu = mu, m =  m,use_cone_for_eq = K1, plot = plt)
-		if(not init_traj_ok):
-			saveTrial(c_ddc_mid, c_ddc_1  , P1, N1, found, K1)
+		found, init_traj_ok = connect_two_points(c_ddc_0  , c_ddc_mid, P0, N0, mu = mu, m =  m,use_cone_for_eq = None, plot = plt)
+		#~ if(not init_traj_ok):
+			#~ saveTrial(c_ddc_0  , c_ddc_mid, P0, N0, found, K0)
+		#~ found, init_traj_ok = connect_two_points(c_ddc_mid, c_ddc_1  , P1, N1, mu = mu, m =  m,use_cone_for_eq = K1, plot = plt)
+		#~ if(not init_traj_ok):
+			#~ saveTrial(c_ddc_mid, c_ddc_1  , P1, N1, found, K1)
+	end = clock()
+	print "total time ", (end - start)  * 1000
+	print "avg time ", float(end - start) / float(num_iters) * 1000.
 	print "num success, ", len(results['trials_success'])
 	print "num success, ", len(results['trials_success'])
 	print "num fails, ", len(results['trials_fail'] )
@@ -248,8 +306,8 @@ def load_results(fname ="test"):
 if __name__ == '__main__':
 	#~ gen_non_trivial_data(3)
 	#~ gen_non_trivial_data(2)
-	#~ gen_non_trivial_data(1)
-	#~ save_results()
+	gen_non_trivial_data(1)
+	save_results()
 	
-	results = load_results()
-	gen_trajs(results, False)
+	#~ results = load_results()
+	#~ gen_trajs(results, False)
