@@ -43,8 +43,8 @@ def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu
 	states += [make_state(fullBody, Ps[-1], Ns[-1], configs[stateid+1])]	
 	K0 = asarray(compute_CWC(Ps[0], Ns[0], mass=m, mu = mu, simplify_cones = False))
 	K1 = asarray(compute_CWC(Ps[1], Ns[1], mass=m, mu = mu, simplify_cones = False))
-	K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
-	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1, K2] }
+	#~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
+	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1] }
 	
 
 def gen_all_sequence_state(fullBody, configs):

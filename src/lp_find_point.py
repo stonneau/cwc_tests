@@ -67,7 +67,7 @@ def lp_ineq_4D(K,k, ones_range = None):
 	print "A_in" , K_1
 	print "Alb" , Alb
 	print "k" , k
-	solver = solver_LP_abstract.getNewSolver('cvxopt', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=1)
+	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=1)
 	(status, res, rest) = solver.solve(cost, lb = lb, ub = ub, A_in=K_1, Alb=Alb, Aub=-k, A_eq=None, b=None)
 		
 	#problem solved or unfeasible
