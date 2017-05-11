@@ -253,19 +253,14 @@ def find_valid_c_ddc_cwc(H, max_iter = 5, ddc=array([0.,0.,0.]), m = 54.,  g_vec
 #  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
 def find_valid_c_ddc_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bounds_ddc = [-1.,1.,-1.,1.,-1.,1.], max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81])):
 	c = None; ddc = None;
-	for i in range(max_iter):
+	for _ in range(max_iter):
 		c = array([uniform(bounds_c[2*i], bounds_c[2*i+1]) for i in range(3)])
-		ddc = array([uniform(bounds_ddc[2*i], bounds_ddc[2*i+1]) for i in range(3)])
-		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
-		if robustness >= 0:
-			print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness			
-			if Kin != None:
-				print "checking for boundaries, ", (Kin[0].dot(c)).T
-				if(Kin[0].dot(c)<=Kin[1]).all():
-					print "boundaries satisfied"
+		if Kin == None or (Kin[0].dot(c)<=Kin[1]).all():
+			for _ in range(max_iter):
+				ddc = array([uniform(bounds_ddc[2*i], bounds_ddc[2*i+1]) for i in range(3)])
+				res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
+				if robustness >= 0:
 					return [(c,ddc), True, robustness]
-			else:
-				return [(c,ddc), True, robustness]
 	#~ print "never found  a valid solution "
 	return [(c,ddc), False, robustness]
 	

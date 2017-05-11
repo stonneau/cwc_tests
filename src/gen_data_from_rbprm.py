@@ -44,7 +44,7 @@ def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu
 	K0 = asarray(compute_CWC(Ps[0], Ns[0], mass=m, mu = mu, simplify_cones = False))
 	K1 = asarray(compute_CWC(Ps[1], Ns[1], mass=m, mu = mu, simplify_cones = False))
 	#~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
-	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1] }
+	return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1], "stateid" : stateid }
 	
 
 def gen_all_sequence_state(fullBody, configs):
@@ -109,7 +109,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	
 	return quasi_static_sol, (c0, ddc0), c_ddc_mid, (c1, ddc1), P_0, N_0, P_1, N_1
 
-def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5):
+def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None):
 	# generate a candidate c, ddc valid for the intermediary phase	
 	P_mid = data["inter_contacts"]["P"]
 	N_mid = data["inter_contacts"]["N"]
@@ -123,30 +123,90 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	c1 = data["end_state"  ]["c"]
 	dc1 = data["end_state"  ]["dc"]
 	ddc1 = data["end_state"  ]["ddc"]
+	stateid = data["stateid"]
 	#~ K0 = data["cones"][0]	
 	K1 = data["cones"][1]	
 	#~ K2 = data["cones"][2]
 	#first try to find quasi static solution
 	quasi_static_sol = False
 	success = False
+	c_ddc_1 = []; c_ddc_2 = []
 	if(c_sample_bounds == None):
 		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.2, max(c0[i], c1[i])+0.2] for i in range(3)]) # arbitrary
 	if use_rand:
-		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
-		[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+		[c_ddc_1, success, margin]  = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+		[c_ddc_2, success2, margin2] = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+		if fullBody != None:
+			success = False
+			success2 = False
+			for i in range(10):
+				if not success:
+					[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+					if success:
+						try:
+							q_1 = fullBody.projectToCom(stateid, c_ddc_1[0])
+							print "isconfig valid", fullBody.isConfigValid(q_1)
+							success = fullBody.isConfigValid(q_1)
+						except:
+							success = False
+							
+				if not success2:
+					[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+					if success2:
+						try:
+							q_2 = fullBody.projectToCom(stateid+1, c_ddc_2[0])
+							print "isconfig valid", fullBody.isConfigValid(q_2)
+							success2 = fullBody.isConfigValid(q_2)
+						except:
+							success2 = False					
+				print "valid ? ", success, c_ddc_1
+				print "valid ? ", success2, c_ddc_2				
+				if success2 and success:
+					break			
+		
+		#~ c_ddc_1[0][2]+=0.05
+		#~ c_ddc_2[0][2]+=0.05
 	else:
 		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[0], only_max_kin = True, m = m)
 		margin = res[3]
-		res[2]+=0.10
+		if success and fullBody:
+			success = False
+			for i in range(10):
+				try:
+					q_1 = fullBody.projectToCom(stateid, res[0:3])
+					print "projection ok"
+					print "isconfig valid", fullBody.isConfigValid(q_1)
+					success = fullBody.isConfigValid(q_1)
+				except:
+					success = False
+				if not success:
+					print "increase in 1"
+					res[2]+=0.05
+				else:
+					break
 		c_ddc_1 = (res[0:3], zero3)
-		print "valid ? ", success, margin
+		
 		
 		success2 , status_ok, res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[1],only_max_kin = True, m = m)
+		if success2  and fullBody:
+			success2 = False
+			for i in range(10):
+				try:
+					q_1 = fullBody.projectToCom(stateid+1, res[0:3])
+					print "projection ok"
+					print "isconfig valid", fullBody.isConfigValid(q_1)
+					success2 = fullBody.isConfigValid(q_1)
+				except:
+					success2 = False
+				if not success2:
+					print "increase in 1"
+					res[2]+=0.05
+				else:
+					break
 		#~ success2, status_ok , res = find_valid_c_cwc(K1, zero3,  m = m)
 		margin = res[3]
-		res[2]+=0.10
 		c_ddc_2 = (res[0:3], zero3)
-		print "valid ? ", success, margin
+		print "valid ? ", success2, margin
 	
 	return success and success2, c_ddc_1, c_ddc_2
 
