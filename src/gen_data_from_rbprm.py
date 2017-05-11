@@ -109,6 +109,14 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	
 	return quasi_static_sol, (c0, ddc0), c_ddc_mid, (c1, ddc1), P_0, N_0, P_1, N_1
 
+def project_com_colfree(fullBody, stateid, com):
+	try:
+		q_1 = fullBody.projectToCom(stateid, com)
+		print "isconfig valid", fullBody.isConfigValid(q_1)
+		return fullBody.isConfigValid(q_1)
+	except:
+		return False
+
 def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None):
 	# generate a candidate c, ddc valid for the intermediary phase	
 	P_mid = data["inter_contacts"]["P"]
@@ -143,22 +151,12 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 				if not success:
 					[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 					if success:
-						try:
-							q_1 = fullBody.projectToCom(stateid, c_ddc_1[0])
-							print "isconfig valid", fullBody.isConfigValid(q_1)
-							success = fullBody.isConfigValid(q_1)
-						except:
-							success = False
+						success = project_com_colfree(stateid, c_ddc_1[0])
 							
 				if not success2:
 					[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
 					if success2:
-						try:
-							q_2 = fullBody.projectToCom(stateid+1, c_ddc_2[0])
-							print "isconfig valid", fullBody.isConfigValid(q_2)
-							success2 = fullBody.isConfigValid(q_2)
-						except:
-							success2 = False					
+						success2 = project_com_colfree(stateid+1, c_ddc_2[0])
 				print "valid ? ", success, c_ddc_1
 				print "valid ? ", success2, c_ddc_2				
 				if success2 and success:
@@ -172,13 +170,7 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 		if success and fullBody:
 			success = False
 			for i in range(10):
-				try:
-					q_1 = fullBody.projectToCom(stateid, res[0:3])
-					print "projection ok"
-					print "isconfig valid", fullBody.isConfigValid(q_1)
-					success = fullBody.isConfigValid(q_1)
-				except:
-					success = False
+				success = project_com_colfree(stateid, res[0:3])
 				if not success:
 					print "increase in 1"
 					res[2]+=0.05
@@ -191,13 +183,7 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 		if success2  and fullBody:
 			success2 = False
 			for i in range(10):
-				try:
-					q_1 = fullBody.projectToCom(stateid+1, res[0:3])
-					print "projection ok"
-					print "isconfig valid", fullBody.isConfigValid(q_1)
-					success2 = fullBody.isConfigValid(q_1)
-				except:
-					success2 = False
+				success2 = project_com_colfree(stateid+1, res[0:3])
 				if not success2:
 					print "increase in 1"
 					res[2]+=0.05

@@ -27,10 +27,10 @@ def __compute_K_c_kin(K_c,Kin):
 		return K_c
 	K_kin = Kin[0]
 	K_c_kin = zeros((K_c.shape[0] + K_kin.shape[0], K_c.shape[1]) )
-	print "k_c shape ", K_c.shape
-	print "K_kin shape ", K_kin.shape
-	print "K_kin", K_kin
-	print "K_c_kin shape ", K_c_kin.shape
+	#~ print "k_c shape ", K_c.shape
+	#~ print "K_kin shape ", K_kin.shape
+	#~ print "K_kin", K_kin
+	#~ print "K_c_kin shape ", K_c_kin.shape
 	K_c_kin [:K_c.shape[0], :] = K_c
 	K_c_kin [K_c.shape[0]:,:] = K_kin
 	return K_c_kin
@@ -39,7 +39,7 @@ def __compute_k_c_kin(k_c,Kin):
 	if Kin == None:
 		return k_c
 	k_kin = Kin[1]
-	print "k_kin", k_kin
+	#~ print "k_kin", k_kin
 	k_c_kin = zeros(k_c.shape[0] + k_kin.shape[0])
 	k_c_kin[:k_c.shape[0]] = k_c[:]
 	k_c_kin[k_c.shape[0]:] =-k_kin[:]
@@ -62,12 +62,12 @@ def lp_ineq_4D(K,k, ones_range = None):
 	ub =  array([ 100000000. for _ in range(4)])
 	Alb = array([-100000000. for _ in range(k.shape[0])])
 	#~ Alb = empty((k.shape[0]))
-	print "lb" , lb
-	print "ub" ,  ub
-	print "A_in" , K_1
-	print "Alb" , Alb
-	print "k" , k
-	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=1)
+	#~ print "lb" , lb
+	#~ print "ub" ,  ub
+	#~ print "A_in" , K_1
+	#~ print "Alb" , Alb
+	#~ print "k" , k
+	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=0)
 	(status, res, rest) = solver.solve(cost, lb = lb, ub = ub, A_in=K_1, Alb=Alb, Aub=-k, A_eq=None, b=None)
 		
 	#problem solved or unfeasible
