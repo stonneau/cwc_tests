@@ -51,7 +51,14 @@ def __compute_K_1(K, ones_range):
 	K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
 	K_1[:,:3] = K[:]
 	return K_1
- 
+
+def __normalize(A,b):
+    for i in range (A.shape[0]):
+        n_A = norm(A[i,:])
+        if(n_A != 0.):
+            A[i,:] = A[i,:] / n_A
+            b[i] = b[i] / n_A
+    return A, b
  
 def lp_ineq_4D(K,k, ones_range = None):
 	if(ones_range == None):
@@ -61,15 +68,10 @@ def lp_ineq_4D(K,k, ones_range = None):
 	lb =  array([-100000000. for _ in range(4)]);
 	ub =  array([ 100000000. for _ in range(4)])
 	Alb = array([-100000000. for _ in range(k.shape[0])])
-	#~ Alb = empty((k.shape[0]))
-	#~ print "lb" , lb
-	#~ print "ub" ,  ub
-	#~ print "A_in" , K_1
-	#~ print "Alb" , Alb
-	#~ print "k" , k
+	K_1, k =  __normalize(K_1, k)
 	solver = solver_LP_abstract.getNewSolver('qpoases', "dyn_eq", maxIter=10000, maxTime=10000.0, useWarmStart=False, verb=0)
 	(status, res, rest) = solver.solve(cost, lb = lb, ub = ub, A_in=K_1, Alb=Alb, Aub=-k, A_eq=None, b=None)
-		
+    
 	#problem solved or unfeasible
 	p_solved = solver_LP_abstract.LP_status.OPTIMAL and res[3] >= 0.
 	status_ok = status== solver_LP_abstract.LP_status.OPTIMAL

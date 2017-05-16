@@ -16,6 +16,7 @@ import math
 from numpy.random import rand
 from CWC_methods import compute_CWC, is_stable
 from lp_dynamic_eq import dynamic_equilibrium_lp
+from hpp import Error as hpperr
 
 zero3 = array([0.,0.,0.])
 
@@ -112,12 +113,26 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 
 def project_com_colfree(fullBody, stateid, com):
 	try:
-		print "before project", fullBody.isConfigValid(q_1)
+		print "before project"
 		q_1 = fullBody.projectToCom(stateid, com)
 		print "isconfig valid", fullBody.isConfigValid(q_1)
 		return fullBody.isConfigValid(q_1)[0]
-	except:
+	except hpperr as e:
+		print "hpperr failed at id " + str(stateid) , e.strerror 
 		return False
+
+def add_z_constraints(Kin, c_sample_bounds):   
+    A = Kin[0]
+    b = Kin[1]
+    A_Kin = zeros([A.shape[0]+2,A.shape[1]])
+    b_Kin = zeros([b.shape[0]+2])
+    A_Kin[:A.shape[0],:] = A[:,:]
+    b_Kin[:A.shape[0]]   = b[:]
+    A_Kin[A.shape[0],2] = 1
+    b_Kin[A.shape[0]] = c_sample_bounds[5]
+    A_Kin[A.shape[0]+1,2] = -1
+    b_Kin[A.shape[0]+1] = -c_sample_bounds[4]
+    return [A_Kin, b_Kin]
 
 def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None):
 	# generate a candidate c, ddc valid for the intermediary phase	
@@ -144,7 +159,6 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	if(c_sample_bounds == None):
 		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
 		c_sample_bounds += [min(c0[2], c1[2])-0.1, max(c0[2], c1[2])+0.1]
-		print "c_sample bounds", c_sample_bounds
 	if use_rand:
 		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 		[c_ddc_2, success2, margin2] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
@@ -165,11 +179,10 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 				print "valid ? ", success2, c_ddc_2				
 				if success2 and success:
 					break			
-		
-		c_ddc_1[0][2]+=0.05
-		c_ddc_2[0][2]+=0.05
 	else:
-		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[0], only_max_kin = True, m = m)
+		#adding sample bounds on z to kin constraints
+		Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
+		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c, only_max_kin = True, m = m)
 		margin = res[3]
 		if success and fullBody:
 			success = project_com_colfree(fullBody, stateid, res[0:3])
@@ -184,7 +197,8 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 		c_ddc_1 = (res[0:3], zero3)
 		
 		
-		success2 , status_ok, res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[1],only_max_kin = True, m = m)
+		Kin_c = add_z_constraints(c_bounds[1], c_sample_bounds)
+		success2 , status_ok, res = find_valid_c_cwc(K1, zero3, Kin = Kin_c,only_max_kin = True, m = m)
 		if success2  and fullBody:
 			success2 = False
 			for i in range(10):
