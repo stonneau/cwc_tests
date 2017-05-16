@@ -88,7 +88,8 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	#first try to find quasi static solution
 	quasi_static_sol = False
 	success = False
-	bounds_c = flatten([[min(c0[i], c1[i])-0.1, max(c0[i], c1[i])+0.1] for i in range(3)]) # arbitrary
+	bounds_c = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
+	bounds_c += [[min(c0[2], c1[2])-0.1, max(c0[2], c1[2])+0.1]]
 	if test_quasi_static:
 		[c_ddc_mid, success, margin] = find_valid_c_random(P_mid, N_mid, bounds_c=bounds_c, m = m, mu = mu)
 	if(success):
@@ -111,9 +112,10 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 
 def project_com_colfree(fullBody, stateid, com):
 	try:
+		print "before project", fullBody.isConfigValid(q_1)
 		q_1 = fullBody.projectToCom(stateid, com)
 		print "isconfig valid", fullBody.isConfigValid(q_1)
-		return fullBody.isConfigValid(q_1)
+		return fullBody.isConfigValid(q_1)[0]
 	except:
 		return False
 
@@ -140,10 +142,12 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	success = False
 	c_ddc_1 = []; c_ddc_2 = []
 	if(c_sample_bounds == None):
-		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.2, max(c0[i], c1[i])+0.2] for i in range(3)]) # arbitrary
+		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
+		c_sample_bounds += [min(c0[2], c1[2])-0.1, max(c0[2], c1[2])+0.1]
+		print "c_sample bounds", c_sample_bounds
 	if use_rand:
-		[c_ddc_1, success, margin]  = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
-		[c_ddc_2, success2, margin2] = find_valid_c_ddc_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
+		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
+		[c_ddc_2, success2, margin2] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
 		if fullBody != None:
 			success = False
 			success2 = False
@@ -151,26 +155,27 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 				if not success:
 					[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 					if success:
-						success = project_com_colfree(stateid, c_ddc_1[0])
+						success = project_com_colfree(fullBody,stateid, c_ddc_1[0])
 							
 				if not success2:
 					[c_ddc_2, success2, margin] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
 					if success2:
-						success2 = project_com_colfree(stateid+1, c_ddc_2[0])
+						success2 = project_com_colfree(fullBody,stateid+1, c_ddc_2[0])
 				print "valid ? ", success, c_ddc_1
 				print "valid ? ", success2, c_ddc_2				
 				if success2 and success:
 					break			
 		
-		#~ c_ddc_1[0][2]+=0.05
-		#~ c_ddc_2[0][2]+=0.05
+		c_ddc_1[0][2]+=0.05
+		c_ddc_2[0][2]+=0.05
 	else:
 		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = c_bounds[0], only_max_kin = True, m = m)
 		margin = res[3]
 		if success and fullBody:
-			success = False
+			success = project_com_colfree(fullBody, stateid, res[0:3])
+			#~ success = False
 			for i in range(10):
-				success = project_com_colfree(stateid, res[0:3])
+				success = project_com_colfree(fullBody, stateid, res[0:3])
 				if not success:
 					print "increase in 1"
 					res[2]+=0.05
@@ -183,7 +188,7 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 		if success2  and fullBody:
 			success2 = False
 			for i in range(10):
-				success2 = project_com_colfree(stateid+1, res[0:3])
+				success2 = project_com_colfree(fullBody, stateid+1, res[0:3])
 				if not success2:
 					print "increase in 1"
 					res[2]+=0.05
