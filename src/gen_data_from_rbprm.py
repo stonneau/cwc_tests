@@ -90,7 +90,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	quasi_static_sol = False
 	success = False
 	bounds_c = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
-	bounds_c += [[min(c0[2], c1[2])-0.1, max(c0[2], c1[2])+0.1]]
+	bounds_c += [[min(c0[2], c1[2])-0.15, max(c0[2], c1[2])+0.1]]
 	if test_quasi_static:
 		[c_ddc_mid, success, margin] = find_valid_c_random(P_mid, N_mid, bounds_c=bounds_c, m = m, mu = mu)
 	if(success):
@@ -117,8 +117,8 @@ def project_com_colfree(fullBody, stateid, com):
 		q_1 = fullBody.projectToCom(stateid, com)
 		print "isconfig valid", fullBody.isConfigValid(q_1)
 		return fullBody.isConfigValid(q_1)[0]
-	except hpperr as e:
-		print "hpperr failed at id " + str(stateid) , e.strerror 
+	except:
+		print "hpperr failed at id " + str(stateid)
 		return False
 
 def add_z_constraints(Kin, c_sample_bounds):   
@@ -157,15 +157,15 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	success = False
 	c_ddc_1 = []; c_ddc_2 = []
 	if(c_sample_bounds == None):
-		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
-		c_sample_bounds += [min(c0[2], c1[2])-0.1, max(c0[2], c1[2])+0.1]
+		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.35, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
+		c_sample_bounds += [min(c0[2], c1[2])-0.09, max(c0[2], c1[2])+0.2]
 	if use_rand:
 		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 		[c_ddc_2, success2, margin2] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
 		if fullBody != None:
 			success = False
 			success2 = False
-			for i in range(10):
+			for i in range(1):
 				if not success:
 					[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 					if success:
