@@ -89,7 +89,9 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	#first try to find quasi static solution
 	quasi_static_sol = False
 	success = False
-	bounds_c = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
+	#~ bounds_c = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
+	bounds_c = [[min(c0[0], c1[0]), max(c0[0], c1[0])+0.3]]
+	bounds_c += [[min(c0[1], c1[1])-0.3, max(c0[2], c1[2])+0.3]]
 	bounds_c += [[min(c0[2], c1[2])-0.15, max(c0[2], c1[2])+0.1]]
 	if test_quasi_static:
 		[c_ddc_mid, success, margin] = find_valid_c_random(P_mid, N_mid, bounds_c=bounds_c, m = m, mu = mu)
