@@ -47,8 +47,10 @@ def __compute_k_c_kin(k_c,Kin):
 
 
 def __compute_K_1(K, ones_range):
-	K_1 = zeros((K.shape[0],4))
-	K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
+	#~ K_1 = zeros((K.shape[0],4))
+	#~ K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
+	K_1 = ones((K.shape[0],4))
+	K_1[ones_range[0]:ones_range[1],-1] = zeros(ones_range[1]-ones_range[0])
 	K_1[:,:3] = K[:]
 	return K_1
 
@@ -274,13 +276,13 @@ def find_valid_c_ddc_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bo
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return [(c,ddc), success, margin] where success is True if a solution was found and margin is the the minimum distance to the bounds found
-def find_valid_c_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bounds_ddc = [-1.,1.,-1.,1.,-1.,1.], max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81])):
+def find_valid_c_random(P, N, Kin = None, bounds_c = [0.,1.,0.,1.,0.,1.], bounds_ddc = [-1.,1.,-1.,1.,-1.,1.], max_iter = 10000, m = 54., mu = 0.6, g_vec=array([0.,0.,-9.81]), no_eq = False):
 	c = None; ddc = None;
 	for i in range(max_iter):
 		c = array([uniform(bounds_c[2*i], bounds_c[2*i+1]) for i in range(3)])
 		ddc = array([0.,0.,0.])
 		res_lp, robustness =  dynamic_equilibrium_lp(c, ddc, P, N, mass = m, mu = mu)
-		if robustness >= 0.01:
+		if no_eq or robustness >= 0.01:
 			#~ print "found a valid solution in ", i , "trials: ", (c,ddc), "robustness : ", robustness
 			if Kin != None:
 				#~ print "checking for boundaries, ", (Kin[0].dot(c)).T

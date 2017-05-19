@@ -90,7 +90,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
 	quasi_static_sol = False
 	success = False
 	#~ bounds_c = flatten([[min(c0[i], c1[i])-0.3, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
-	bounds_c = [[min(c0[0], c1[0]), max(c0[0], c1[0])+0.3]]
+	bounds_c = [[min(c0[0], c1[0])-0.15, max(c0[0], c1[0])+0.3]]
 	bounds_c += [[min(c0[1], c1[1])-0.3, max(c0[2], c1[2])+0.3]]
 	bounds_c += [[min(c0[2], c1[2])-0.15, max(c0[2], c1[2])+0.1]]
 	if test_quasi_static:
@@ -136,6 +136,19 @@ def add_z_constraints(Kin, c_sample_bounds):
     b_Kin[A.shape[0]+1] = -c_sample_bounds[4]
     return [A_Kin, b_Kin]
 
+def add_x_constraints(Kin, c_sample_bounds):   
+    A = Kin[0]
+    b = Kin[1]
+    A_Kin = zeros([A.shape[0]+2,A.shape[1]])
+    b_Kin = zeros([b.shape[0]+2])
+    A_Kin[:A.shape[0],:] = A[:,:]
+    b_Kin[:A.shape[0]]   = b[:]
+    A_Kin[A.shape[0],0] = 1
+    b_Kin[A.shape[0]] = c_sample_bounds[1]
+    A_Kin[A.shape[0]+1,0] = -1
+    b_Kin[A.shape[0]+1] = -c_sample_bounds[0]
+    return [A_Kin, b_Kin]
+
 def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None):
 	# generate a candidate c, ddc valid for the intermediary phase	
 	P_mid = data["inter_contacts"]["P"]
@@ -159,8 +172,9 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	success = False
 	c_ddc_1 = []; c_ddc_2 = []
 	if(c_sample_bounds == None):
-		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.35, max(c0[i], c1[i])+0.3] for i in range(2)]) # arbitrary
-		c_sample_bounds += [min(c0[2], c1[2])-0.09, max(c0[2], c1[2])+0.2]
+		c_sample_bounds = flatten([[min(c0[i], c1[i])-0.1, max(c0[i], c1[i])+0.1] for i in range(1)]) # arbitrary
+		c_sample_bounds += [min(c0[2], c1[2])-0.3, max(c0[2], c1[2])+0.3]
+		c_sample_bounds += [min(c0[2], c1[2])-0.03, max(c0[2], c1[2])+0.2]
 	if use_rand:
 		[c_ddc_1, success, margin]  = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[0], bounds_c=c_sample_bounds, m = m, mu = mu)
 		[c_ddc_2, success2, margin2] = find_valid_c_random(P_mid, N_mid, Kin = c_bounds[1], bounds_c=c_sample_bounds, m = m, mu = mu)
@@ -184,6 +198,8 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 	else:
 		#adding sample bounds on z to kin constraints
 		Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
+		Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
+		#~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
 		success, status_ok , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c, only_max_kin = True, m = m)
 		margin = res[3]
 		if success and fullBody:
@@ -200,6 +216,7 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
 		
 		
 		Kin_c = add_z_constraints(c_bounds[1], c_sample_bounds)
+		Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
 		success2 , status_ok, res = find_valid_c_cwc(K1, zero3, Kin = Kin_c,only_max_kin = True, m = m)
 		if success2  and fullBody:
 			success2 = False
