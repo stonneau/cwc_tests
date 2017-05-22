@@ -47,10 +47,10 @@ def __compute_k_c_kin(k_c,Kin):
 
 
 def __compute_K_1(K, ones_range):
-	#~ K_1 = zeros((K.shape[0],4))
-	#~ K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
-	K_1 = ones((K.shape[0],4))
-	K_1[ones_range[0]:ones_range[1],-1] = zeros(ones_range[1]-ones_range[0])
+	K_1 = zeros((K.shape[0],4))
+	K_1[ones_range[0]:ones_range[1],-1] = ones(ones_range[1]-ones_range[0])
+	#~ K_1 = ones((K.shape[0],4))
+	#~ K_1[ones_range[0]:ones_range[1],-1] = zeros(ones_range[1]-ones_range[0])
 	K_1[:,:3] = K[:]
 	return K_1
 
