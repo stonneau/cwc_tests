@@ -9,7 +9,7 @@ sys.path.insert(0, './tools')
 
 from polytope_conversion_utils import *
 from transformations import euler_matrix
-from numpy import array, vstack, zeros, sqrt, cross, matrix, asmatrix
+from numpy import array, vstack, zeros, sqrt, cross, matrix, asmatrix, asarray
 from numpy.linalg import norm
 import numpy as np
 
@@ -58,7 +58,7 @@ def compute_CWC(p, N, mass, mu = 0.6, simplify_cones = False):
 	H, h = eq.getPolytopeInequalities()
 	assert(norm(h) < __EPS), "h is not equal to zero"
 	print "H lines ", H.shape
-	return -H
+	return np.squeeze(np.asarray(-H))
 
 ## 
 #  Given a cone and a wrench returns whether

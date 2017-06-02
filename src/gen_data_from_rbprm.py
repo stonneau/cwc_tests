@@ -235,7 +235,8 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
                     break            
     else:
         #adding sample bounds on z to kin constraints
-        Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
+        #~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
+        Kin_c = c_bounds[0]
         #~ Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)

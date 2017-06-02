@@ -42,7 +42,7 @@ def __compute_k_c_kin(k_c,Kin):
     #~ print "k_kin", k_kin
     k_c_kin = zeros(k_c.shape[0] + k_kin.shape[0])
     k_c_kin[:k_c.shape[0]] = k_c[:]
-    k_c_kin[k_c.shape[0]:] =-k_kin[:]
+    k_c_kin[k_c.shape[0]:] = -k_kin[:]
     return k_c_kin
 
 
@@ -87,17 +87,21 @@ from numpy import array, arange, zeros, ones, identity, vstack, hstack, append, 
     
 from scipy.optimize import minimize
 def qp_ineq_4D(c_ref, K,k, ones_range = None):
-    if(ones_range == None):
-        ones_range = (0, K.shape[0])
     #~ K_1 = __compute_K_1(K, ones_range)
     #~ K_1, k =  __normalize(K_1, k)
     K, k =  __normalize(K, k)
+    a_c_ref = array(c_ref)
+    fun = lambda x: sum((x-a_c_ref)**2)
+    if ones_range != None:
+		K = __compute_K_1(K, ones_range)
+		fun = lambda x: sum((x-a_c_ref)**2) * 10 + x[3]
+		a_c_ref = array(c_ref+[0])
     #in slsqp constraint is Ax + b >= 0
     # we have Kx + k <=0 
-    a_c_ref = array(c_ref)
+    
+		
     cons = ({'type': 'ineq',
-            'fun' : lambda x: (K.dot(x)+k)})
-    fun = lambda x: sum((x-a_c_ref)**2)
+            'fun' : lambda x: -(K.dot(x)+k)})
     res = minimize(fun, a_c_ref, constraints=cons, method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
     return res
 
@@ -156,10 +160,10 @@ def find_valid_c_cwc(H, ddc, Kin = None, only_max_kin = False, only_max_dyn = Fa
     K_c_kin = __compute_K_c_kin(K_c,Kin)
     k_c_kin = __compute_k_c_kin(k_c,Kin)
     one_range = None
-    #~ if(only_max_kin):
-        #~ one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
-    #~ elif only_max_dyn:
-        #~ one_range=(0, K_c.shape[0])
+    if(only_max_kin):
+        one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
+    elif only_max_dyn:
+        one_range=(0, K_c.shape[0])
     return lp_ineq_4D(K_c_kin,k_c_kin, one_range)
 
 # Find a COM lying in a polytope for a given com acceleration, minimizing the distance to a reference point, assuming dL = 0
@@ -184,16 +188,19 @@ def find_valid_c_cwc(H, ddc, Kin = None, only_max_kin = False, only_max_dyn = Fa
 #  \param mu friction coefficient
 #  \param g_vec gravity acceleration
 #  \return the solver status, whether the point satisfies the constraints, and the closest point that satisfies them
-def find_valid_c_cwc_qp(H, c_ref, ddc=[0.,0.,0.], m = 54., g_vec=array([0.,0.,-9.81])):
+def find_valid_c_cwc_qp(H, c_ref, Kin = None, ddc=[0.,0.,0.], m = 54., g_vec=array([0.,0.,-9.81])):
     w1 = m * (ddc - g_vec)
     K_c = __compute_K_c(H, w1)
     k_c = __compute_k_c(H, w1)
-    #~ K_c_kin = __compute_K_c_kin(K_c,Kin)
-    #~ k_c_kin = __compute_k_c_kin(k_c,Kin)
+    one_range = None
+    if Kin != None:
+		K_c = __compute_K_c_kin(K_c,Kin)
+		k_c = __compute_k_c_kin(k_c,Kin)
+		one_range=(0, K_c.shape[0])		
     #~ one_range = None
     #~ if(only_max_kin):
         #~ one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
-    return qp_ineq_4D(c_ref, K_c,k_c, None)
+    return qp_ineq_4D(c_ref, K_c,k_c, one_range)
 
 #********* END find_intersection_c ********************
     
