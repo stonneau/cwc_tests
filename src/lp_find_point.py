@@ -93,17 +93,21 @@ def qp_ineq_4D(c_ref, K,k, ones_range = None):
     a_c_ref = array(c_ref)
     fun = lambda x: sum((x-a_c_ref)**2)
     if ones_range != None:
-		K = __compute_K_1(K, ones_range)
-		fun = lambda x: sum((x-a_c_ref)**2) * 10 + x[3]
-		a_c_ref = array(c_ref+[0])
+        K = __compute_K_1(K, ones_range)
+        fun = lambda x: sum(((x-a_c_ref)[:3])**2) -x[3]
+        #~ fun = lambda x: x[3]
+        a_c_ref = array(c_ref+[1])
     #in slsqp constraint is Ax + b >= 0
     # we have Kx + k <=0 
     
-		
+        
     cons = ({'type': 'ineq',
             'fun' : lambda x: -(K.dot(x)+k)})
     res = minimize(fun, a_c_ref, constraints=cons, method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
-    return res
+    if(ones_range == None):
+        return res["success"], res["success"], res["x"]
+    else:
+        return res["success"], res["success"] and res["x"][3]>=0, res["x"]
 
 # ********************************************************
 # ********************************************************
@@ -194,9 +198,9 @@ def find_valid_c_cwc_qp(H, c_ref, Kin = None, ddc=[0.,0.,0.], m = 54., g_vec=arr
     k_c = __compute_k_c(H, w1)
     one_range = None
     if Kin != None:
-		K_c = __compute_K_c_kin(K_c,Kin)
-		k_c = __compute_k_c_kin(k_c,Kin)
-		one_range=(0, K_c.shape[0])		
+        K_c = __compute_K_c_kin(K_c,Kin)
+        k_c = __compute_k_c_kin(k_c,Kin)
+        one_range=(0, K_c.shape[0])        
     #~ one_range = None
     #~ if(only_max_kin):
         #~ one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])

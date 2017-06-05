@@ -34,6 +34,13 @@ def make_state(fullBody, P, N, config):
     res["ddc"] = zero3
     return res    
 
+def __com(fullBody, sId):
+        q0 = self.fullBody.client.basic.robot.getCurrentConfig()
+        fullBody.client.basic.robot.setCurrentConfig(fullBody.getConfigAtState(sId))
+        c = fullBody.client.basic.robot.getComPosition()
+        fullBody.client.basic.robot.setCurrentConfig(q0)
+        return c
+
 def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu = 0.5):    
     print "state id", stateid
     #first compute com #acceleration always assumed to be 0 and vel as wel    
@@ -45,7 +52,7 @@ def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu
     K0 = -asarray(compute_CWC(Ps[0], Ns[0], mass=m, mu = mu, simplify_cones = False))
     K1 = -asarray(compute_CWC(Ps[1], Ns[1], mass=m, mu = mu, simplify_cones = False))
     #~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
-    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1], "stateid" : stateid }
+    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1], "stateid" : stateid,  "mass" : fullBody.getMass(), "com1" : __com(fullBody, stateid), "com2" : __com(fullBody, stateid+1) }
     
 def gen_sequence_data_from_state_objects(s1,s2,sInt,mu = 0.5):
     m = s1.fullBody.getMass()
@@ -66,7 +73,7 @@ def gen_sequence_data_from_state_objects(s1,s2,sInt,mu = 0.5):
     K1 = asarray(compute_CWC(PsInt[0], NsInt[0], mass=m, mu = mu, simplify_cones = False))
     #~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
     print "ret" 
-    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(PsInt[0], NsInt[0]), "cones" : [K0, K1], "stateid" : s1.sId }
+    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(PsInt[0], NsInt[0]), "cones" : [K0, K1], "stateid" : s1.sId,  "mass" : m, "com1" : s1.getCenterOfMass(), "com2" : s2.getCenterOfMass() }
     
 
 def gen_all_sequence_state(fullBody, configs):
@@ -87,7 +94,7 @@ def load_data(filename):
     return res
     
 from bezier_trajectory import *
-from lp_find_point import find_valid_c_random, find_valid_c_ddc_random
+from lp_find_point import find_valid_c_random, find_valid_c_ddc_random, find_valid_c_cwc_qp
 from lp_dynamic_eq import dynamic_equilibrium_lp
 
 flatten = lambda l: [item for sublist in l for item in sublist]
@@ -106,6 +113,7 @@ def generate_problem(data, test_quasi_static = False, m = 55.88363633, mu = 0.5)
     c1 = data["end_state"  ]["c"]
     dc1 = data["end_state"  ]["dc"]
     ddc1 = data["end_state"  ]["ddc"]
+    m = data["mass"]
     
     #first try to find quasi static solution
     quasi_static_sol = False
@@ -204,6 +212,9 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
     stateid = data["stateid"]
     #~ K0 = data["cones"][0]    
     K1 = data["cones"][1]    
+    m = data["mass"]
+    com1 = data["com1"]
+    com2 = data["com2"]
     #~ K2 = data["cones"][2]
     #first try to find quasi static solution
     quasi_static_sol = False
@@ -240,7 +251,9 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
         #~ Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
-        success, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c, only_max_kin = False, only_max_dyn = True, m = m)
+        #~ success, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c, only_max_kin = False, only_max_dyn = True, m = m) 
+        success, p_solved , res = find_valid_c_cwc_qp(K1, com1, Kin = Kin_c, m = m)
+        print "Target com 1", com1
         print "status LP com1: ", success, p_solved, res[3]
         margin = res[3]
         if success and fullBody:
@@ -258,10 +271,13 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
         print "valid ? ", success, margin
         
         
-        Kin_c = add_z_constraints(c_bounds[1], c_sample_bounds)
-        Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
-        Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
-        success2, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c,only_max_kin = False, only_max_dyn = True, m = m)
+        Kin_c = c_bounds[1]
+        #~ Kin_c = add_z_constraints(c_bounds[1], c_sample_bounds)
+        #~ Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
+        #~ Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
+        #~ success2, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c,only_max_kin = False, only_max_dyn = True, m = m)
+        success2, p_solved , res = find_valid_c_cwc_qp(K1, com2, Kin = Kin_c,m = m)
+        print "Target com 2", com2
         print "status LP com2:", success2, p_solved, res[3]
         if success2  and fullBody:
             success2 = False
@@ -294,6 +310,7 @@ def solve_dyn(data, c_bounds, c_sample_bounds = None, m = 55.88363633, mu = 0.5)
     c1 = data["end_state"  ]["c"]
     dc1 = data["end_state"  ]["dc"]
     ddc1 = data["end_state"  ]["ddc"]
+    m = data["mass"]
     
     #first try to find quasi static solution
     quasi_static_sol = False
@@ -318,7 +335,6 @@ def saveTrial(c_ddc_0  , c_ddc_1, P, N, success, K):
         results['trials_fail']    += [(c_ddc_0 , c_ddc_1, P, N, K)]
 
 mu = 0.6
-m = 55.88363633
 
 from time import time as clock
 
