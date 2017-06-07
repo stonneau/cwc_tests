@@ -94,9 +94,9 @@ def qp_ineq_4D(c_ref, K,k, ones_range = None):
     fun = lambda x: sum((x-a_c_ref)**2)
     if ones_range != None:
         K = __compute_K_1(K, ones_range)
-        fun = lambda x: sum(((x-a_c_ref)[:3])**2) -x[3]
+        fun = lambda x: sum(((x-a_c_ref)[:3])**2) + 10 * x[3]**2
         #~ fun = lambda x: x[3]
-        a_c_ref = array(c_ref+[1])
+        a_c_ref = array(c_ref+[0]) 
     #in slsqp constraint is Ax + b >= 0
     # we have Kx + k <=0 
     
