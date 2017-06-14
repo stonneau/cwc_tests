@@ -54,7 +54,7 @@ def gen_sequence_data_from_state(fullBody, stateid, configs, m = 55.88363633, mu
     #~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
     return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(Ps[1], Ns[1]), "cones" : [K0, K1], "stateid" : stateid,  "mass" : fullBody.getMass(), "com1" : __com(fullBody, stateid), "com2" : __com(fullBody, stateid+1) }
     
-def gen_sequence_data_from_state_objects(s1,s2,sInt,mu = 0.5):
+def gen_sequence_data_from_state_objects(s1,s2,sInt,mu = 0.5, isContactCreated = False):
     m = s1.fullBody.getMass()
     print "state id", s1.sId
     #first compute com #acceleration always assumed to be 0 and vel as wel    
@@ -73,7 +73,7 @@ def gen_sequence_data_from_state_objects(s1,s2,sInt,mu = 0.5):
     K1 = asarray(compute_CWC(PsInt[0], NsInt[0], mass=m, mu = mu, simplify_cones = False))
     #~ K2 = asarray(compute_CWC(Ps[2], Ns[2], mass=m, mu = mu, simplify_cones = False))
     print "ret" 
-    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(PsInt[0], NsInt[0]), "cones" : [K0, K1], "stateid" : s1.sId,  "mass" : m, "com1" : s1.getCenterOfMass(), "com2" : s2.getCenterOfMass() }
+    return { "start_state" : states[0], "end_state" : states[1], "inter_contacts" : make_state_contact_points(PsInt[0], NsInt[0]), "cones" : [K0, K1], "stateid" : s1.sId,  "mass" : m, "com1" : s1.getCenterOfMass(), "com2" : s2.getCenterOfMass(), "isContactCreated" : isContactCreated }
     
 
 def gen_all_sequence_state(fullBody, configs):
@@ -94,7 +94,7 @@ def load_data(filename):
     return res
     
 from bezier_trajectory import *
-from lp_find_point import find_valid_c_random, find_valid_c_ddc_random, find_valid_c_cwc_qp
+from lp_find_point import find_valid_c_random, find_valid_c_ddc_random, find_valid_c_cwc_qp, find_valid_c_cwc_qp_impulse
 from lp_dynamic_eq import dynamic_equilibrium_lp
 
 flatten = lambda l: [item for sublist in l for item in sublist]
@@ -195,7 +195,7 @@ def add_y_constraints(Kin, c_sample_bounds):
     b_Kin[A.shape[0]+1] = -c_sample_bounds[2]
     return [A_Kin, b_Kin]
 
-def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None):
+def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False, m = 55.88363633, mu = 0.5, fullBody = None, use_Kin = True):
     # generate a candidate c, ddc valid for the intermediary phase    
     P_mid = data["inter_contacts"]["P"]
     N_mid = data["inter_contacts"]["N"]
@@ -215,6 +215,7 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
     m = data["mass"]
     com1 = data["com1"]
     com2 = data["com2"]
+    isContactCreated = data["isContactCreated"]
     #~ K2 = data["cones"][2]
     #first try to find quasi static solution
     quasi_static_sol = False
@@ -247,14 +248,23 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
     else:
         #adding sample bounds on z to kin constraints
         #~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
-        Kin_c = c_bounds[0]
+        if(use_Kin):
+            Kin_c = c_bounds[0]
+        else:
+            Kin_c = [zeros([3,3]),zeros(3)]
+            
         #~ Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_z_constraints(c_bounds[0], c_sample_bounds)
         #~ success, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c, only_max_kin = False, only_max_dyn = True, m = m) 
-        success, p_solved , res = find_valid_c_cwc_qp(K1, com1, Kin = Kin_c, m = m)
+        if(isContactCreated):
+            success, p_solved , res = find_valid_c_cwc_qp(K1, com1, Kin = Kin_c, m = m)
+        else:
+            print "impulse"
+            #~ success, p_solved , res = find_valid_c_cwc_qp_impulse(K1, com1, Kin = Kin_c, m = m)
+            success, p_solved , res = True, True, array([com1[0]+0.20,com1[1], com1[2]-0.40, 2])
         print "Target com 1", com1
-        print "status LP com1: ", success, p_solved, res[3]
+        print "status LP com1: ", success, p_solved, res[3], res[:3]
         margin = res[3]
         if success and fullBody:
             success = project_com_colfree(fullBody, stateid, res[0:3])
@@ -271,18 +281,29 @@ def solve_quasi_static(data, c_bounds, c_sample_bounds = None, use_rand = False,
         print "valid ? ", success, margin
         
         
-        Kin_c = c_bounds[1]
+        if(use_Kin):
+            Kin_c = c_bounds[1]
+        else:
+            Kin_c = [zeros([3,3]),zeros(3)]
         #~ Kin_c = add_z_constraints(c_bounds[1], c_sample_bounds)
         #~ Kin_c = add_x_constraints(Kin_c, c_sample_bounds)
         #~ Kin_c = add_y_constraints(Kin_c, c_sample_bounds)
         #~ success2, p_solved , res = find_valid_c_cwc(K1, zero3, Kin = Kin_c,only_max_kin = False, only_max_dyn = True, m = m)
-        success2, p_solved , res = find_valid_c_cwc_qp(K1, com2, Kin = Kin_c,m = m)
+        
+        if(isContactCreated):
+            success2, p_solved , res = find_valid_c_cwc_qp(K1, com2, Kin = Kin_c,m = m)
+        else:
+            print "impulse"
+            success2, p_solved , res = find_valid_c_cwc_qp(K1, com1, Kin = c_bounds[0], m = m)
         print "Target com 2", com2
-        print "status LP com2:", success2, p_solved, res[3]
+        print "status LP com2:", success2, p_solved, res[3], res[:3]
         if success2  and fullBody:
             success2 = False
             for i in range(10):
-                success2 = project_com_colfree(fullBody, stateid+1, res[0:3])
+                if(isContactCreated):
+                    success2 = project_com_colfree(fullBody, stateid+1, res[0:3])
+                else:
+                    success2 = project_com_colfree(fullBody, stateid, res[0:3])
                 if not success2:
                     print "increase in 1"
                     res[2]+=0.05

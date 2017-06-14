@@ -21,7 +21,7 @@ from mpl_toolkits.mplot3d import Axes3D
                      
 CONTACT_SET = 1;
 cg = 4;     # number of generators per contact
-__EPS = 0.00000001
+__EPS = 0.000001
 
 
 from centroidal_dynamics import *

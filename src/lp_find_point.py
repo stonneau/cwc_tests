@@ -109,6 +109,31 @@ def qp_ineq_4D(c_ref, K,k, ones_range = None):
     else:
         return res["success"], res["success"] and res["x"][3]>=0, res["x"]
 
+def qp_ineq_4D_impulse(c_ref, K,k, ones_range = None):
+    #~ K_1 = __compute_K_1(K, ones_range)
+    #~ K_1, k =  __normalize(K_1, k)
+    if(ones_range == None):
+        ones_range = (0, K.shape[0])
+    K = __compute_K_1(K, ones_range)
+    K, k =  __normalize(K, k)
+    #~ a_c_ref = array(c_ref)
+    #~ fun = lambda x: sum((x-a_c_ref)**2)
+    #~ if ones_range != None:
+    fun = lambda x: 10 * sum(((x-a_c_ref)[:2])**2) + 1 * x[3] + ((x-a_c_ref)[2] - 0.05)**2
+    #~ fun = lambda x: x[3]
+    a_c_ref = array(c_ref+[0]) 
+    #in slsqp constraint is Ax + b >= 0
+    # we have Kx + k <=0 
+    
+        
+    cons = ({'type': 'ineq',
+            'fun' : lambda x: -(K.dot(x)+k)})
+    res = minimize(fun, a_c_ref, constraints=cons, method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
+    if(ones_range == None):
+        return res["success"], res["success"], res["x"]
+    else:
+        return res["success"], res["success"] and res["x"][3]>=0, res["x"]
+
 # ********************************************************
 # ********************************************************
 # ********************* CWC METHODS **********************
@@ -205,6 +230,20 @@ def find_valid_c_cwc_qp(H, c_ref, Kin = None, ddc=[0.,0.,0.], m = 54., g_vec=arr
     #~ if(only_max_kin):
         #~ one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
     return qp_ineq_4D(c_ref, K_c,k_c, one_range)
+
+def find_valid_c_cwc_qp_impulse(H, c_ref, Kin = None, ddc=[0.,0.,0.], m = 54., g_vec=array([0.,0.,-9.81])):
+    w1 = m * (ddc - g_vec)
+    K_c = __compute_K_c(H, w1)
+    k_c = __compute_k_c(H, w1)
+    one_range = None
+    if Kin != None:
+        K_c = __compute_K_c_kin(K_c,Kin)
+        k_c = __compute_k_c_kin(k_c,Kin)
+        #~ one_range=(0, K_c.shape[0])        
+    one_range = None
+    #~ if(only_max_kin):
+        #~ one_range=(K_c_kin.shape[0] - K_c.shape[0],K_c_kin.shape[0])
+    return qp_ineq_4D_impulse(c_ref, K_c,k_c, one_range)
 
 #********* END find_intersection_c ********************
     
