@@ -100,7 +100,7 @@ def qp_ineq_4D(c_ref, K,k, ones_range = None):
     #in slsqp constraint is Ax + b >= 0
     # we have Kx + k <=0 
     
-        
+	
     cons = ({'type': 'ineq',
             'fun' : lambda x: -(K.dot(x)+k)})
     res = minimize(fun, a_c_ref, constraints=cons, method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
@@ -108,6 +108,32 @@ def qp_ineq_4D(c_ref, K,k, ones_range = None):
         return res["success"], res["success"], res["x"]
     else:
         return res["success"], res["success"] and res["x"][3]>=0, res["x"]
+
+#solves a qp in 6D where first 3 rows and last 3 rows must be orthogonal
+def qp_ineq_6D_orthogonal(x_ref, K, k):
+    K, k =  __normalize(K, k)
+    a_x_ref = array(x_ref)
+    P = zeros([6,6]); P[3:6,:3] = identity(3)
+    fun = lambda x: sum((x-a_x_ref)**2)     + 100 * (x.transpose().dot(P).dot(x)**2)
+    
+    #in slsqp constraint is Ax + b >= 0
+    # we have Kx + k <=0 
+    cons = ({'type': 'ineq',
+            'fun' : lambda x: -(K.dot(x)+k)})
+    res = minimize(fun, a_x_ref, constraints=cons, method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
+    return res["success"], res["x"]
+
+#solves a qp in 3D where the solution is constrained to lie on an line, and is closest from a reference
+# given a w = [w1,w2] x is given by x =( w2 X (-w1)) / (-w1 . -w1) + (-w1) t where t is a scalar
+def qp_ineq_3D_line(x_ref, w_ref):
+	m_w1 = -w_ref[0:3]
+	w2   = w_ref[3:6]
+	c0w =  cross(w2,m_w1)/(m_w1.dot(m_w1))
+	fun = lambda t: sum((c0w + m_w1 * t[0] -x_ref)**2)
+    #~ cons = ({'type': 'ineq',
+            #~ 'fun' : lambda x: -(K.dot(x)+k)})
+	res = minimize(fun, [0.], method='SLSQP', options={'ftol': 1e-06, 'maxiter' : 500})
+	return res["success"], c0w + m_w1 * res["x"][0]
 
 def qp_ineq_4D_impulse(c_ref, K,k, ones_range = None):
     #~ K_1 = __compute_K_1(K, ones_range)
